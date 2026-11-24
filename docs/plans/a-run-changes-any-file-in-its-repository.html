@@ -25,7 +25,7 @@
   <title>A run changes any file in its repository | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-11-24">
 </head>
 <body>
@@ -82,7 +82,7 @@
     <div class="r-comment-body"><p>Review of d8b4512613 scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 17, reuse 19 with two non-blocking findings (stale five-case negative-control count in the evidence fragment; promotion's refusal names no kind); added_failure_count 0 over the reviewed run's own baseline and after suite arms.</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261124T064433914756-review-of-arcaf-no-fence-inside-the-repository-3d516c35b938" data-who="reckon-build" data-when="2026-11-24T06:52:44.777Z">
-    <div class="r-comment-body"><p>An independent review of r-20261122T213440174432 scored the two commits gained since its prior review (d74d1a193a, 3d516c35b9) across all six dimensions and stored a parsed record at reviewed_base_sha d8b4512613 and reviewed_head_sha 3d516c35b9 with zero added failures; the changed resumed-run case keeps its refusal subject on an exclusive artifact and the fragment&#x27;s quoted suite and population numbers reconcile with the run&#x27;s own logs.</p></div>
+    <div class="r-comment-body"><p>An independent review of r-20261122T213440174432 scored the two commits gained since its prior review (d74d1a193a, 3d516c35b9) across all six dimensions and stored a parsed record at reviewed_base_sha d8b4512613 and reviewed_head_sha 3d516c35b9 with zero added failures; the changed resumed-run case keeps its refusal subject on an exclusive artifact and the fragment's quoted suite and population numbers reconcile with the run's own logs.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261123T203137193604-review-of-arcaf-reviews-take-slots-first-e04648c6c1a8" data-who="reckon-build" data-when="2026-11-23T22:19:45.566Z">
     <div class="r-comment-body"><p>Review of r-20261122T213519079815-arcaf-reviews-take-slots-first at reviewed head e04648c6c1a8 (base 4fa07b80a8) stored as a parsed record scoring all six dimensions; one blocking finding: a sub-critical override is hoisted ahead of a critical request in the production fair-share admission path.</p></div>
@@ -92,6 +92,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261124T050347463580-review-of-arcaf-reviews-take-slots-first-719e2bf02eb7" data-who="reckon-build" data-when="2026-11-24T05:13:17.582Z">
     <div class="r-comment-body"><p>Review of r-20261122T213519079815-arcaf-reviews-take-slots-first at reviewed head 719e2bf02e (base a5d4eb38) stored as a parsed record scoring all six dimensions; two non-blocking findings, no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261122T213519079815-arcaf-reviews-take-slots-first" data-who="reckon-build" data-when="2026-11-24T05:03:25Z">
+    <div class="r-comment-body"><p>A request whose priority override reaches its project&#x27;s critical level (flight setting queue.critical_priority, default 100) takes a freed slot ahead of a waiting delivered review. The level is now a move over the shared order, not an urgency class: queue_order._critical_ahead_of_reviews places a critical request ahead of the first waiting review, after every request past the starvation age, and returns the queue unchanged when no review waits. admission_order_details and fair_queue_order_details apply the same move, so the two queues agree; starvation ageing and a review&#x27;s precedence over the run it reviews are unchanged. Scoped template gate exit 0, 59/66 passed; importing-test arms fail the same twelve base failures.</p></div>
 </div>
 </section>
 </main>
