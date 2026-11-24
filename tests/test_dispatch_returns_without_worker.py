@@ -86,7 +86,9 @@ REAL_LIVE_DIR = _config_home() / "crew" / "live"
 
 
 @pytest.fixture()
-def writable_marker_dir(host: dict[str, Any]) -> Iterator[Path]:
+def writable_marker_dir(
+    host: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> Iterator[Path]:
     """A directory the fenced worker may both read and write.
 
     The stub records its pid here, waits for its release file here and writes
@@ -94,12 +96,19 @@ def writable_marker_dir(host: dict[str, Any]) -> Iterator[Path]:
     filesystem. It sits under the base, which is outside the node's own ``/tmp``
     that the fence overlays with each run's scratch: a directory beneath that
     tree is absent from the worker, so the stub would neither find its release
-    file nor be able to leave a marker. Handing the directory to the launch as
-    the fleet runtime directory would grant it, but that directory is a
-    node-local default the harness pins rather than the case's, so a case
-    relying on it would be measuring the host.
+    file nor be able to leave a marker.
+
+    The fence mounts the filesystem read-only and grants writes only to the
+    roots a launch is handed, so visibility is not enough — the directory also
+    has to be one of those roots. It is handed to the run as its runtime
+    directory, which every fenced launch is granted writable and the fence
+    creates when it is absent. That grant is the one every lane already
+    receives, so nothing is exempted for this case and no seal is weakened; the
+    value is pinned here rather than inherited, so the case names its own
+    directory instead of measuring wherever the harness put one.
     """
     directory = Path(tempfile.mkdtemp(prefix="reckon-worker-marker-", dir=host["base"]))
+    monkeypatch.setenv("FLEET_RUNTIME_DIR", str(directory))
     try:
         yield directory
     finally:

@@ -391,7 +391,7 @@ def test_a_run_sets_the_harness_home_inside_its_own_run_directory(
     assert harness.is_dir()
     # The home is seeded for a live run and the run directory is granted, so
     # the seal on ``~/.config/reckon`` is what the run's grant has to re-open.
-    assert plan.argv[:4] == ["bwrap", "--dev-bind", "/", "/"]
+    assert plan.argv[:4] == ["bwrap", "--ro-bind", "/", "/"]
     assert fixture.config in _backends.protected_paths(str(fixture.home))
     assert [str(fixture.run), str(fixture.run)] in _bind_pairs(plan.argv)
 

@@ -18,9 +18,11 @@ Two properties, and the second is what makes the first mean anything:
 * the fence holds: every protected sentinel survives, every granted root is
   writable, and the results file proves the run directory was writable because
   the stub could not have written it otherwise;
-* the declared negative control drops the ``--ro-bind`` for the ``~/.claude``
-  stand-in, and that stand-in's sentinel is then deleted. Without it the suite
-  would pass against a fence that was never applied at all.
+* the declared negative control grants a writable bind for the ``~/.claude``
+  stand-in, mounted after its read-only overlay, and that stand-in's sentinel
+  is then deleted. The removal is attributable to the grant because the rest
+  of the filesystem stays read-only; without it the suite would pass against a
+  fence that was never applied at all.
 
 Running this file directly reproduces the red log: its first line is the
 declared mutation, verbatim, and what follows is the observed deletion.
@@ -40,7 +42,7 @@ import pytest
 from reckon import _backends, _worker_fence
 
 NEGATIVE_CONTROL_MUTATION = (
-    "drop the --ro-bind for the ~/.claude stand-in so its sentinel can be deleted"
+    "grant a writable --bind for the ~/.claude stand-in so its sentinel can be deleted"
 )
 
 # The second declared mutation: a symlinked protected path bound at its own
@@ -339,27 +341,17 @@ class AncestorSymlinkFence(Fence):
         ]
 
 
-def _drop_ro_bind(argv: list[str], path: Path) -> list[str]:
-    """Return argv with the read-only overlay of ``path`` removed.
+def _grant_write_bind(argv: list[str], path: Path) -> list[str]:
+    """Return argv with a writable bind of ``path`` appended to the fence.
 
-    The declared mutation: the rest of the fence stays, so a change that
-    deletes the sentinel proves the removed overlay was the thing holding it.
+    The declared mutation: a grant is the last word on its own path, so it
+    re-opens a path the read-only root and its overlay otherwise hold. The
+    rest of the fence stays, so a change that deletes the sentinel proves the
+    grant was the thing that opened it.
     """
     target = str(path)
-    kept: list[str] = []
-    index = 0
-    while index < len(argv):
-        if (
-            argv[index] == "--ro-bind"
-            and index + 2 < len(argv)
-            and argv[index + 1] == target
-            and argv[index + 2] == target
-        ):
-            index += 3
-            continue
-        kept.append(argv[index])
-        index += 1
-    return kept
+    separator = len(argv) - 1 - argv[::-1].index("--")
+    return [*argv[:separator], "--bind", target, target, *argv[separator:]]
 
 
 def _bind_destinations(argv: list[str]) -> list[Path]:
@@ -393,12 +385,16 @@ def _overlays_inside_another(argv: list[str]) -> list[Path]:
     destinations = [
         Path(argv[index + 2]) for index, flag in enumerate(argv) if flag == "--ro-bind"
     ]
+    # The read-only root every other destination is trivially "inside" is the
+    # base mount, not an overlay covering them: counting it would report the
+    # whole fence as redundant.
+    containers = [path for path in destinations if path.parent != path]
     return [
         destination
         for destination in destinations
         if any(
             destination != other and destination.is_relative_to(other)
-            for other in destinations
+            for other in containers
         )
     ]
 
@@ -443,7 +439,7 @@ def _bind_at_the_unresolved_path(
 
 def _negative_control_report(root: Path) -> list[str]:
     fence = Fence(root)
-    argv = _drop_ro_bind(fence.argv(), fence.protected[".claude"])
+    argv = _grant_write_bind(fence.argv(), fence.protected[".claude"])
     proc = fence.run_fence(argv)
     sentinel = fence.protected[".claude"] / "sentinel"
     return [
@@ -502,7 +498,7 @@ def _redundant_overlay_control_report(root: Path) -> list[str]:
 def test_the_fence_seals_every_protected_class(tmp_path: Path) -> None:
     fence = Fence(tmp_path)
     argv = fence.argv()
-    assert argv[:4] == ["bwrap", "--dev-bind", "/", "/"]
+    assert argv[:4] == ["bwrap", "--ro-bind", "/", "/"]
     assert "--ro-bind" in argv
     # The node tmp is still sealed; the fixture only moved it beside the home.
     # Asserting it here keeps that fixture honest: a home sitting under no seal
@@ -534,18 +530,18 @@ def test_the_fence_seals_every_protected_class(tmp_path: Path) -> None:
 
 @requires_bwrap
 def test_the_negative_control_deletes_the_claude_sentinel(tmp_path: Path) -> None:
-    """The declared mutation: without the ``~/.claude`` overlay it dies.
+    """The declared mutation: with a writable grant for ``~/.claude`` it dies.
 
-    If the wrong path were dropped the sentinel would survive and this test
-    would fail, so the deletion is attributable to the removed overlay.
+    If the wrong path were granted the sentinel would survive and this test
+    would fail, so the deletion is attributable to the granted path.
     """
     fence = Fence(tmp_path)
-    argv = _drop_ro_bind(fence.argv(), fence.protected[".claude"])
+    argv = _grant_write_bind(fence.argv(), fence.protected[".claude"])
     proc = fence.run_fence(argv)
     assert proc.returncode == 0, proc.stderr
     sentinel = fence.protected[".claude"] / "sentinel"
     assert not sentinel.exists()
-    assert "--ro-bind" in argv  # only that one overlay was removed
+    assert "--ro-bind" in argv  # the read-only root and overlays are intact
 
 
 @requires_bwrap
@@ -561,7 +557,7 @@ def test_a_symlinked_protected_path_does_not_stop_the_launch(tmp_path: Path) -> 
     fence = SymlinkFence(tmp_path)
     argv = fence.argv()
 
-    assert argv[:4] == ["bwrap", "--dev-bind", "/", "/"]
+    assert argv[:4] == ["bwrap", "--ro-bind", "/", "/"]
     assert "--ro-bind" in argv
     # No mount destination has a symlink anywhere in its ancestry: bubblewrap
     # refuses a point below a link exactly as it refuses a symlinked leaf.
@@ -633,7 +629,7 @@ def test_a_protected_path_below_a_symlinked_directory_does_not_stop_the_launch(
     fence = AncestorSymlinkFence(tmp_path)
     argv = fence.argv()
 
-    assert argv[:4] == ["bwrap", "--dev-bind", "/", "/"]
+    assert argv[:4] == ["bwrap", "--ro-bind", "/", "/"]
     for destination in _bind_destinations(argv):
         assert not _has_symlink_component(destination), destination
     # Each protected child is bound at the real directory behind the link, and

@@ -590,7 +590,7 @@ def test_the_filesystem_fence_is_composed_by_default() -> None:
     fenced = _backends.launch_plan(
         backend_name="b", backend=CLAUDE, prompt="p", worktree="/wt"
     )
-    assert fenced.argv[:4] == ["bwrap", "--dev-bind", "/", "/"]
+    assert fenced.argv[:4] == ["bwrap", "--ro-bind", "/", "/"]
     assert fenced.argv.index("--") > 3
 
 
@@ -607,4 +607,4 @@ def test_the_filesystem_fence_applies_to_every_cli_dialect(backend) -> None:
         resume_session="S",
         fence=True,
     )
-    assert resumed.argv[:4] == ["bwrap", "--dev-bind", "/", "/"]
+    assert resumed.argv[:4] == ["bwrap", "--ro-bind", "/", "/"]

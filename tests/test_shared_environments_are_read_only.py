@@ -97,7 +97,7 @@ def _identity(path):
     return stat.st_size, stat.st_mtime_ns, hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _replay(decoys, destination):
+def _replay(decoys, destination, *, writable=()):
     home, _, worktree, run, scratch = decoys
     wrapper = run / "gate.sh"
     wrapper.write_text(
@@ -107,7 +107,7 @@ def _replay(decoys, destination):
         ["/bin/sh", str(wrapper), "gate", "command", str(destination)],
         worktree=worktree,
         manifest_path=run / "manifest.md",
-        writable_directories=[scratch],
+        writable_directories=[scratch, *writable],
         home=home,
     )
     return subprocess.run(argv, capture_output=True, text=True, check=False, timeout=20)
@@ -147,22 +147,28 @@ def test_redirect_through_three_links_refuses_and_preserves_decoy(decoys, regist
         assert destination.read_text() == "replacement gate log\n"
 
 
-def test_install_tree_removed_from_sealed_roots_replaces_decoy(decoys, monkeypatch):
+def test_a_grant_on_the_install_tree_replaces_the_decoy(decoys):
+    """A writable grant is the only thing that opens a path under the fence.
+
+    The fence mounts the filesystem read-only, so sealing the install tree is
+    no longer the barrier the redirect meets: with no grant on it, the write
+    fails whatever the protected-path list says. The mutation that keeps this
+    test's purpose — showing the refusal is the boundary doing the work — is a
+    declared grant over the install tree, which opens it and lets the redirect
+    replace the decoy.
+    """
     home, _, worktree, _, _ = decoys
     _, _, target = _chain(decoys, registered=False)
     before = _identity(target)
-    original = fence._named_protected_paths
     install = home / ".local/share/uv/python"
-    monkeypatch.setattr(
-        fence,
-        "_named_protected_paths",
-        lambda home=None: [path for path in original(home) if path != install],
-    )
-    result = _replay(decoys, worktree / ".venv/bin/python")
+    refused = _replay(decoys, worktree / ".venv/bin/python")
+    assert refused.returncode != 0, "an ungranted install tree was written"
+    assert _identity(target) == before
+    result = _replay(decoys, worktree / ".venv/bin/python", writable=[install])
     assert result.returncode == 0, result.stderr
     assert _identity(target) != before
     assert target.read_text() == "replacement gate log\n"
-    print(f"unsealed decoy changed: {before} -> {_identity(target)}")
+    print(f"granted decoy changed: {before} -> {_identity(target)}")
 
 
 def test_environment_roots_follow_the_shared_resolver(decoys, monkeypatch):
