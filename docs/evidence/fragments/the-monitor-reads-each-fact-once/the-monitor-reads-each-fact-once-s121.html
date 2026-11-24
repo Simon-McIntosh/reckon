@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <title>A held tree whose lookup failed is offered again</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-monitor-reads-each-fact-once-s121-landing" data-node="the-monitor-reads-each-fact-once-s121" data-reckon="landing" data-when="2026-11-24">
+  <h2>An unanswerable lookup must not read as "no rows name this tree"</h2>
+  <p>The incremental held-tree pass asks the store which rows name a tree it has just seen (<code>_rows_naming_trees</code>). That reader answered an empty list on any failure, which the pass could not tell apart from a successful answer of no rows, so it recorded the new tree as inspected. Its held duty was then dropped and never offered again, because the next refresh computes its "new trees" as the present trees minus the inspected ones and the failed tree was already in neither set. Only an unrelated rewrite of the aggregate, which rebuilds the index, brought the duty back.</p>
+  <p>The lookup now returns <code>None</code> for a failure and <code>[]</code> for a confirmed empty answer. The pass leaves a tree whose lookup failed out of the inspected set so the next refresh asks again, and advances the index's generation. The generation matters because the published pass is memoised on its source signature: a transient store failure does not move that signature, so without it the memoised, incomplete answer would keep answering every retry. A successful lookup is unchanged and its tree joins the held set as before, so the retry repeats no work once it succeeds.</p>
+  <p>Implementation commit <code>2a0618b403</code> changes <code>reckon/crew/obligations.py</code> and adds <code>tests/test_a_failed_held_tree_lookup_is_retried.py</code>. The fixture writes a landed row for a fourth tree and parks its directory, so the row is reachable only through the store projection and not through a re-read per-run document. Three cases run against the real refresh: a failed lookup leaves the tree uninspected and the next readable refresh shows its duty; a successful lookup is made once and not repeated on the next refresh; and the recovered duty view equals a from-scratch build's after the cached inputs are cleared.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Base</th><th>Delivered code</th></tr></thead>
+    <tbody>
+      <tr><td>Node gate: <code>test_a_failed_held_tree_lookup_is_retried.py</code></td><td><code>2 failed, 1 passed in 1.44s</code>; <code>EXIT=1</code></td><td><code>3 passed in 3.46s</code>; <code>EXIT=0</code></td></tr>
+      <tr><td>Importer arms on <code>all_debug</code> (142 test files importing <code>reckon.crew.obligations</code>)</td><td><code>17 failed, 844 passed in 1179.87s (0:19:39)</code>; <code>EXIT=1</code></td><td><code>17 failed, 844 passed in 1139.20s (0:18:59)</code>; <code>EXIT=1</code></td></tr>
+      <tr><td>Importer failing or erroring ids</td><td>17</td><td>17; none added, none cleared</td></tr>
+    </tbody>
+  </table>
+  <p>Base revision <code>f841f80686ea83952ff80b6b0c941971935cd76f</code> fails the first case with the tree recorded as inspected and its duty absent, and fails the equality case with the recovered view missing the retried duty; the successful-lookup case passes at base because that path is unchanged. Each arm runs as its own <code>all_debug</code> job over a tree extracted at the named revision; each log prints its revision, tree, imported module path, working directory, the literal command and a terminal <code>EXIT=</code> line, and lives under the node's run directory as <code>arm-base.log</code>, <code>arm-head.log</code> and <code>gate-head.log</code>. The 17 failures are the population's pre-existing ones: the base and head arms carry an identical failing id set, so the change adds none and clears none.</p>
+</article>
+</body>
+</html>
