@@ -447,6 +447,11 @@ def _require_commits_beyond_base(
     the observable question is the one the base answers — the citation is the
     run's work if it descends from the base the run was dispatched against.
 
+    That check measures the run's own worktree and no other tree: a run whose
+    worktree directory has been reclaimed holds nothing to measure, and the
+    repository is the integration checkout rather than the run's, so its
+    operators' untracked files are not this run's uncommitted work.
+
     Uncommitted declared work is only a defect for a run whose deliverable
     belongs in a commit. A shadow run asserts no code and is refused a
     citation by its own guard, so uncommitted work in its tree is the evidence
@@ -548,10 +553,21 @@ def _require_commits_beyond_base(
         # landing writes the patch before the tree is released, which is where
         # a shadow's work is kept.
         return
-    roots = _declared_repository_roots(record, tree=tree)
+    # The dirt this refuses is the run's own, and the only tree that can hold
+    # the run's own work is the worktree it worked in. Once that directory is
+    # gone there is nothing left to measure, and the repository sharing its
+    # object store is a different tree — the integration checkout, carrying
+    # whatever its own operators keep uncommitted. Reading it in the missing
+    # worktree's place charges the lead's untracked files to a run that never
+    # touched them, so a gone worktree ends the check as no evidence rather
+    # than as evidence of dirt. A worktree that still exists is read as before.
+    worktree = _record_worktree(record)
+    if worktree is None:
+        return
+    roots = _declared_repository_roots(record, tree=worktree)
     if not roots:
         return
-    uncommitted = _uncommitted_paths(tree, roots=roots)
+    uncommitted = _uncommitted_paths(worktree, roots=roots)
     if not uncommitted:
         return
     held = [
