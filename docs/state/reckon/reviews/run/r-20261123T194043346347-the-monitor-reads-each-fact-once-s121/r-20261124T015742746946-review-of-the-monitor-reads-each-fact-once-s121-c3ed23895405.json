@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T01:58:45Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 4070,
+      "severity": "non-blocking",
+      "text": "the generation read defaults to 0 when _HELD_RECORD_READS has no entry for the project, so if that index entry is evicted (LRU limit 64) or cleared between a failed pass and its retry, the variant key matches the memoised failed answer at generation 0 and serves it again without re-reading, leaving the duty dropped in that narrow boundary."
+    },
+    {
+      "file": "tests/test_a_failed_held_tree_lookup_is_retried.py",
+      "line": 105,
+      "severity": "non-blocking",
+      "text": "held_inspected() aggregates obligations._HELD_RECORD_READS by tree name across every project in the process and the fleet fixture never clears that global, so the final positive assertion can be satisfied by a leftover entry from another test rather than by this run; the sibling test_held_worktree_fallback_resolves_each_row_once.py:228 clears it."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s121.html",
+      "line": 19,
+      "severity": "non-blocking",
+      "text": "the declared figure path was not used, and the mechanism the fragment describes would read faster as a small state diagram than as prose alone."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a held tree whose row lookup failed is not recorded as inspected and is looked up again on the next refresh; reckon/crew/obligations.py:4612-4634 does exactly that, returning None on failure and excluding those trees from the inspected set.\nVERDICT done_when: the done_when names tests/test_a_failed_held_tree_lookup_is_retried.py with three cases plus identical-failure importer arms; the manifest records the gate at 3 passed / EXIT=0, the base control at 2 failed / EXIT=1, and both arms at 17 failed, 844 passed with identical failing id sets.\nVERDICT write_paths: the task declared docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s121.html, docs/figures/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s121, reckon/crew/obligations.py and tests/test_a_failed_held_tree_lookup_is_retried.py; the diff touches the first, third and fourth only, all inside the declaration, and the figure path is unused.\nVERDICT manifest: read; it reports status complete, records commits 2a0618b403 and e8bedd3adf and c3ed238954, states the 3-passed head gate and the 17-failure base and head arms, and names the gate and arm logs under the run directory.\nVERDICT diff: read commit by commit from f841f80686 to c3ed238954; 2a0618b403 carries the obligations.py sentinel and generation change plus the new test, e8bedd3adf adds the evidence fragment, and c3ed238954 only edits the fragment's gate summary text.\nCALL_SITES: reckon/crew/obligation_snapshot.py:fleet_state, reckon/crew/obligations.py:_held_worktrees_by_session, reckon/crew/obligations.py:_held_worktrees\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:4612-4634 leaves a tree out of the inspected set when _rows_naming_trees returns None and refreshes with inspected minus uninspected, so the next refresh's new_trees includes it again.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head.log carries 3 passed and EXIT=0 at revision 2a0618b403, negative-control.log carries 2 failed, 1 passed and EXIT=1 at base f841f80686, and arm-base.log and arm-head.log carry the same 17 failing ids over 142 files.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three changed paths in the diff are all within the declared scope, and the only edit outside the fix is the evidence fragment the node was granted.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_failed_held_tree_lookup_is_retried.py:154-160 fails if the tree is recorded as inspected and :170-174 fails if the generation is dropped from the memo variant, since the memoised failed answer would then answer the retry.\nSCORE fit: 18\nJUSTIFICATION fit: the None sentinel matches the \"reader failed vs answered no rows\" distinction the surrounding functions already draw (reckon/crew/obligations.py:4129-4137 recorded_run_rows returns None the same way), and the generation follows the file_memo variant design.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no second lookup path; it extends the existing _HeldWorktreeState index and _held_remember store, and I found no owner of a retry-on-failed-read capability in reckon/crew that it forks.\nFINDING reckon/crew/obligations.py:4070 non-blocking: the generation read defaults to 0 when _HELD_RECORD_READS has no entry for the project, so if that index entry is evicted (LRU limit 64) or cleared between a failed pass and its retry, the variant key matches the memoised failed answer at generation 0 and serves it again without re-reading, leaving the duty dropped in that narrow boundary.\nFINDING tests/test_a_failed_held_tree_lookup_is_retried.py:105 non-blocking: held_inspected() aggregates obligations._HELD_RECORD_READS by tree name across every project in the process and the fleet fixture never clears that global, so the final positive assertion can be satisfied by a leftover entry from another test rather than by this run; the sibling test_held_worktree_fallback_resolves_each_row_once.py:228 clears it.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/the-monitor-reads-each-fact-once-s121.html:19 non-blocking: the declared figure path was not used, and the mechanism the fragment describes \u2014 a failed lookup leaving a tree out of the inspected set plus a memo generation forcing the retry \u2014 would read faster as a small state diagram than as the prose alone.",
+  "review_run_id": "r-20261124T015742746946-review-of-the-monitor-reads-each-fact-once-s121-c3ed23895405",
+  "reviewed_base_sha": "f841f80686ea83952ff80b6b0c941971935cd76f",
+  "reviewed_head_sha": "c3ed2389540536e967a88c2d9ed7eabbae3db685",
+  "reviewed_run_id": "r-20261123T194043346347-the-monitor-reads-each-fact-once-s121",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T02:32:59.024785+00:00",
+  "total": 114
+}
