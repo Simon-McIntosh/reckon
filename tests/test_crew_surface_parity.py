@@ -11,10 +11,12 @@ from __future__ import annotations
 import json
 import os
 from importlib import import_module
+from pathlib import Path
 
 from click.testing import CliRunner
 
 from reckon import cli, crew, mcp
+from tests.spa_module_eval import REACT_TREE_PRELUDE, evaluate_jsx_module
 
 recovery_module = import_module("reckon.crew.recovery")
 routed_clock_modules = (
@@ -242,3 +244,68 @@ def test_mine_keeps_only_the_named_sessions_runs(tmp_path, monkeypatch) -> None:
     assert listed.exit_code == 0, listed.output
     rows = json.loads(listed.output)["runs"]
     assert [row["run_id"] for row in rows] == ["run-mine"]
+
+
+PLAN_SURFACE = Path(__file__).resolve().parents[1] / "docs" / "ui" / "plan.jsx"
+
+RETENTION_LISTING = {
+    "items": [
+        {"name": "kept", "class": "persisted", "expires": None},
+        {"name": "quoted", "class": "cited", "expires": None},
+        {"name": "fresh", "class": "working", "expires": "2026-12-01T00:00:00"},
+        {"name": "older", "class": "working", "expires": "2026-12-02T00:00:00"},
+    ],
+    "counts": {"retained": 2, "working": 2, "all": 4},
+}
+
+_FILTER_EXPRESSION = """(() => {
+  const filters = ["retained", "working", "all"];
+  return Object.fromEntries(filters.map(filter => [
+    filter,
+    RETENTION_LISTING.items
+      .filter(item => reportItemInFilter(item, filter))
+      .map(item => item.name),
+  ]));
+})()"""
+
+
+def _spa_membership(source: Path) -> dict[str, list[str]]:
+    return evaluate_jsx_module(
+        source,
+        _FILTER_EXPRESSION,
+        prelude=REACT_TREE_PRELUDE,
+        bindings={"RETENTION_LISTING": RETENTION_LISTING},
+    )
+
+
+def _agrees_with_listing(membership: dict[str, list[str]]) -> bool:
+    return all(
+        len(membership[filter]) == RETENTION_LISTING["counts"][filter]
+        for filter in ("retained", "working", "all")
+    )
+
+
+def test_the_spa_places_each_report_item_in_the_listing_filters() -> None:
+    """The surface's retention class agrees with the listing's on every item."""
+
+    membership = _spa_membership(PLAN_SURFACE)
+    assert membership["retained"] == ["kept", "quoted"]
+    assert membership["working"] == ["fresh", "older"]
+    assert membership["all"] == ["kept", "quoted", "fresh", "older"]
+    assert _agrees_with_listing(membership) is True
+
+
+def test_a_spa_class_that_disagrees_fails_the_parity(tmp_path: Path) -> None:
+    """A surface that classes a working item as retained is caught, not passed."""
+
+    source = PLAN_SURFACE.read_text(encoding="utf-8")
+    mutated = source.replace(
+        'const REPORT_RETAINED_CLASSES = ["persisted", "cited"];',
+        'const REPORT_RETAINED_CLASSES = ["persisted", "cited", "working"];',
+    )
+    assert mutated != source
+    diverged = tmp_path / "plan.jsx"
+    diverged.write_text(mutated, encoding="utf-8")
+    membership = _spa_membership(diverged)
+    assert sorted(membership["retained"]) == ["fresh", "kept", "older", "quoted"]
+    assert _agrees_with_listing(membership) is False

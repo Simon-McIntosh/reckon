@@ -473,6 +473,164 @@ async function saveReaderArtifact(downloadHref) {
   return name;
 }
 
+// A plan's report items, fed only by the server's listing of them. The listing
+// carries each item's retention class, a working item's expiry and the files
+// beside its figure, so this view shows those values as given and derives none
+// of them: a persist is followed by a fresh listing rather than a local guess.
+const REPORT_FILTERS = ["retained", "working", "all"];
+const REPORT_RETAINED_CLASSES = ["persisted", "cited"];
+
+function reportItemInFilter(item, filter) {
+  if (filter === "all") return true;
+  if (filter === "working") return item?.class === "working";
+  return REPORT_RETAINED_CLASSES.includes(item?.class);
+}
+
+function reportFileName(path) {
+  const parts = String(path || "").split("/").filter(Boolean);
+  return parts[parts.length - 1] || String(path || "");
+}
+
+function PlanReportItems({ project, plan }) {
+  const [listing, setListing] = useState(null);
+  const [filter, setFilter] = useState("retained");
+  const [openItem, setOpenItem] = useState(null);
+  const [ticks, setTicks] = useState({});
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const load = React.useCallback(async () => {
+    if (!project || !plan) return;
+    try {
+      const response = await fetch(
+        `/crew/${encodeURIComponent(project)}/reports?plan=${encodeURIComponent(plan)}`,
+        { cache: "no-store" }
+      );
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      setListing(await response.json());
+      setError("");
+    } catch (failure) {
+      setError(`report items unavailable · ${failure.message}`);
+    }
+  }, [project, plan]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const toggleData = (name, path) => setTicks(previous => {
+    const chosen = new Set(previous[name] || []);
+    if (chosen.has(path)) chosen.delete(path);
+    else chosen.add(path);
+    return { ...previous, [name]: [...chosen] };
+  });
+
+  const persist = async item => {
+    if (!item.figure) {
+      setError("this report item holds no figure to persist");
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await fetch(`/crew/${encodeURIComponent(project)}/reports`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ figure: item.figure, data: ticks[item.name] || [], plan }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok !== true) {
+        throw new Error(payload.detail || payload.error || `HTTP ${response.status}`);
+      }
+      setOpenItem(null);
+      setTicks(previous => ({ ...previous, [item.name]: [] }));
+      await load();
+      window.flashSaved?.(`${item.name} persisted`);
+    } catch (failure) {
+      setError(`persist refused · ${failure.message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!listing) {
+    return error
+      ? <section className="r-report-items"><p className="r-report-error" role="status">{error}</p></section>
+      : null;
+  }
+  const items = listing.items || [];
+  const counts = listing.counts || {};
+  const shown = items.filter(item => reportItemInFilter(item, filter));
+  return (
+    <section className="r-report-items" data-plan={plan} data-filter={filter}>
+      <div className="r-report-items-head">
+        <h2><span className="sec">§</span>Report items</h2>
+        <span className="r-report-total" data-count="all">{counts.all ?? 0} in the reports store</span>
+      </div>
+      <div className="r-report-filters" role="group" aria-label="Report retention filter">
+        {REPORT_FILTERS.map(name => (
+          <button key={name} type="button"
+            className={`r-report-filter ${filter === name ? "is-active" : ""}`}
+            data-filter={name} aria-pressed={filter === name}
+            onClick={() => setFilter(name)}>
+            {name}
+            <span className="r-report-count" data-count={name}>{counts[name] ?? 0}</span>
+          </button>
+        ))}
+      </div>
+      {error && <p className="r-report-error" role="status">{error}</p>}
+      <ul className="r-report-list">
+        {shown.map(item => {
+          const selected = ticks[item.name] || [];
+          const open = openItem === item.name;
+          return (
+            <li key={item.name} className="r-report-item" data-item={item.name}
+              data-retention={item.class} data-expires={item.expires || ""}>
+              <div className="r-report-row">
+                <span className={`r-report-class is-${item.class}`}>{item.class}</span>
+                <span className="r-report-name">{item.name}</span>
+                {item.class === "working" && item.expires && (
+                  <span className="r-report-expiry">expires {item.expires}</span>
+                )}
+                {item.class === "working" && item.figure && (
+                  <button type="button" className="r-report-persist"
+                    aria-expanded={open} disabled={busy}
+                    onClick={() => setOpenItem(open ? null : item.name)}>
+                    Persist
+                  </button>
+                )}
+              </div>
+              {open && (
+                <div className="r-report-persist-panel">
+                  <p>Keep the figure alone, or tick the data files to keep beside it.</p>
+                  {(item.data || []).length > 0 ? (
+                    <ul className="r-report-data">
+                      {item.data.map(path => (
+                        <li key={path}>
+                          <label>
+                            <input type="checkbox" className="r-report-data-file"
+                              value={path} checked={selected.includes(path)}
+                              onChange={() => toggleData(item.name, path)} />
+                            {reportFileName(path)}
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="r-report-no-data">No data files sit beside this figure.</p>
+                  )}
+                  <button type="button" className="r-report-persist-apply"
+                    disabled={busy} onClick={() => persist(item)}>
+                    {busy ? "Persisting…" : selected.length > 0 ? "Persist figure with data" : "Persist figure only"}
+                  </button>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {shown.length === 0 && <p className="r-report-empty">No {filter} report items for this plan.</p>}
+    </section>
+  );
+}
+
 function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus }) {
   const M = window.STATE;
   if (!M) return null;
@@ -1070,6 +1228,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
             </div>
           )}
           {isPlan && !usesImageReader && <PlanChecklist todos={fullState?.todos || []} />}
+          {isPlan && <PlanReportItems project={project} plan={PG.slug} />}
           {usesImageReader ? (
             <figure className="r-reader-figure">
               <div

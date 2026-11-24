@@ -780,11 +780,23 @@ def served_spa(
     project: str = "reckon",
     route: str = "#cockpit",
     state_files: tuple[str, ...] = (),
+    crew_home: Path | None = None,
 ) -> Iterator[ServedSpa]:
+    """Serve one mounted project to a browser.
+
+    ``crew_home`` names the configuration home the served process reads, so a
+    caller that must place a store before the page loads keeps the home it
+    populated. Without one a temporary home is made and removed here.
+    """
+
     port = _unused_port()
     mounts = tmp_path / "mounts.json"
     mounts.write_text(json.dumps({project: str(docs)}), encoding="utf-8")
-    server_home = Path(tempfile.mkdtemp(prefix="reckon-server-", dir=tmp_path))
+    server_home = (
+        Path(crew_home)
+        if crew_home is not None
+        else Path(tempfile.mkdtemp(prefix="reckon-server-", dir=tmp_path))
+    )
     fixture_state = docs / "state" / project
     for name in (*_SPA_STATE_FILES, *state_files):
         relative = Path(name)
@@ -800,6 +812,9 @@ def served_spa(
         shutil.copy2(source, destination)
     environment = dict(os.environ)
     environment["RECKON_HOME"] = str(server_home)
+    # The served process resolves a project's flight layer through the mount
+    # registry, so it must read the registry the project was mounted from.
+    environment["RECKON_MOUNTS_PATH"] = str(mounts)
     server = subprocess.Popen(
         [
             sys.executable,
@@ -840,7 +855,8 @@ def served_spa(
         except subprocess.TimeoutExpired:
             server.kill()
             server.wait(timeout=5)
-        shutil.rmtree(server_home)
+        if crew_home is None:
+            shutil.rmtree(server_home)
 
 
 class _QuietStaticHandler(http.server.SimpleHTTPRequestHandler):
