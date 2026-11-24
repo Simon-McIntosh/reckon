@@ -1,0 +1,128 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_partitioned_arm_unpacks_what_it_needs.py tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T173056929818-delivered-work-lands-without-a-coordinator-s63/gate-repair-after.log",
+      "revision": "c48f8e42926139ff8211a31a7444fb8bed9c9fac",
+      "summary": "65 passed in 38.35s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py tests/test_every_shared_home_lock_holds_across_nodes.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T173056929818-delivered-work-lands-without-a-coordinator-s63/gate-repair-baseline.log",
+      "revision": "bf5ff985a74aa4a5e3634a1423d646553740edaf",
+      "summary": "58 passed in 37.55s"
+    },
+    "corroboration": {
+      "after_suite": {
+        "completed": true,
+        "exit_status": 1,
+        "failure_count": 20,
+        "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T173056929818-delivered-work-lands-without-a-coordinator-s63/gate-importer-head.log",
+        "revision": "929954a504",
+        "summary": "20 failed, 1303 passed, 2 skipped in 204.08s"
+      },
+      "baseline_suite": {
+        "completed": true,
+        "exit_status": 1,
+        "failure_count": 20,
+        "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T173056929818-delivered-work-lands-without-a-coordinator-s63/gate-importer-base.log",
+        "revision": "4bd2beb1dc",
+        "summary": "20 failed, 1300 passed, 2 skipped in 203.09s"
+      },
+      "derivation": "comm -3 of the reviewed run's sorted failed-importer-base.txt and failed-importer-head.txt is empty: the same 20 ids fail on both arms, so the population adds no failure. The repair arms (gate-repair-baseline.log and gate-repair-after.log) both exit 0 with zero failures, so added_failure_count is 0 and added_failure_ids is empty."
+    }
+  },
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/crew/landing_measure.py:252 arm_sweep_command",
+    "reckon/crew/landing_measure.py:1556 arm_sweep_command",
+    "reckon/crew/landing_measure.py:1644 arm_sweep_command (_partition_runner script)",
+    "reckon/crew/landing_measure.py:1789 _submit_delayed_sweep",
+    "reckon/crew/landing_measure.py:2787 sweep_stale_arm_trees",
+    "reckon/crew/landing_measure.py:2838 sweep_abandoned_base_trees",
+    "reckon/crew/landing_measure.py:2882 sweep_abandoned_base_trees",
+    "reckon/crew/review_landing.py:98 _partition_runner",
+    "reckon/crew/standing_suite.py:244 _partition_runner",
+    "reckon/crew/queue_order.py:336 queue_critical_priority"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-24T09:31:58Z",
+  "findings": [
+    {
+      "line": 53,
+      "path": "tests/test_a_landing_arm_leaves_no_tree.py:53",
+      "severity": "non-blocking",
+      "text": "The done_when asks that the tests importing the changed modules add no failure against a base arm, but the population arm was measured at 929954a504 and the delivered code head c48f8e4292 carries d5216d34ae, which rewrites sweep_stale_arm_trees. tests/test_a_landing_arm_leaves_no_tree.py is the only file that exercises the refactored removal loop's real behaviour (holder skip, age bound, size, rmtree) and it was not re-run at the delivered head, so its green result predates the code under review. Non-blocking because the refactor is a behaviour-preserving consolidation and the shared-loop test at the head passes, but the population claim is measured one code commit stale."
+    },
+    {
+      "line": 322,
+      "path": "tests/test_a_partitioned_arm_unpacks_what_it_needs.py:322",
+      "severity": "non-blocking",
+      "text": "The delayed-sweep test asserts argv[argv.index('--wrap') + 1] == landing_measure.arm_sweep_command(3600.0, Path('/home/example/reckon')), which compares the submitted wrap against a fresh call to the same function the code under test used, so both sides move together and a defect inside arm_sweep_command (a wrong entry point, bound or interpreter) leaves the assertion true. It would fail only if _submit_delayed_sweep stopped using arm_sweep_command at all. The content of the command is separately guarded by tests/test_a_landing_arm_leaves_no_tree.py:164-173, which is why this is non-blocking."
+    },
+    {
+      "line": 1789,
+      "path": "reckon/crew/landing_measure.py:1789",
+      "severity": "non-blocking",
+      "text": "The call to _submit_delayed_sweep from the arm's failure path (the 'selected_limit and not submission_failed and (timed_out or not receipts)' branch) has no asserting test: deleting the call leaves the suite green, and tests/test_a_partitioned_arm_unpacks_what_it_needs.py:298 tests the helper in isolation. The fragment at docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s63.html:62 accordingly overstates that 'a test asserts each of the three places a job script carries the sweep in ... and the delayed sweep'. Non-blocking: the helper is tested and the wiring was present before this refactor."
+    },
+    {
+      "line": 15,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T173056929818-delivered-work-lands-without-a-coordinator-s63/manifest.md:15",
+      "severity": "non-blocking",
+      "text": "The reviewed manifest's baseline_suite and after_suite fields are free-text lines ('bf5ff985a74a 58 passed ... EXIT=0, command ...') rather than the JSON objects the record contract declares for those keys, so a reader parsing them as JSON gets nothing. Non-blocking for this node because the named logs carry every field the JSON would."
+    }
+  ],
+  "incremental": true,
+  "item_verdicts": {
+    "diff": "See verdicts.diff: one refactor and one evidence correction, both in scope.",
+    "done_when": "See verdicts.done_when: the three required cases are present and the head gate passes 65 EXIT=0 against a 58-passing base, with the negative control reddening as declared.",
+    "goal": "See verdicts.goal: both halves of section s63 hold at the reviewed head; the gained commits change neither the exclusion nor the setup-failure path.",
+    "manifest": "See verdicts.manifest: complete and its gate logs are named, though its suite fields are prose rather than JSON.",
+    "write_paths": "See verdicts.write_paths: the gained authoring is inside the declared paths; the wide path set is merge traffic."
+  },
+  "justifications": {
+    "durability": "tests/test_a_partitioned_arm_unpacks_what_it_needs.py:330 fails with AttributeError when d5216d34ae is reverted (negative-control-reuse.log), but :322 asserts the submitted wrap against a fresh call to the same arm_sweep_command function and reckon/crew/landing_measure.py:1789's failure-path call is asserted nowhere.",
+    "evidence": "The repair pair gate-repair-baseline.log (58 passed, EXIT=0 at bf5ff985a74a) and gate-repair-after.log (65 passed, EXIT=0 at c48f8e4292) is recorded and reconciles, but the done_when's population arm over tests importing the changed modules ran at 929954a504, two commits before the delivered head, so tests/test_a_landing_arm_leaves_no_tree.py was never re-run against the refactored loop.",
+    "fit": "The new helper _sweep_unheld_trees at reckon/crew/landing_measure.py:2602 takes keyword-only options, reuses shutil_rmtree and _scratch_process_holders, and carries the docstring style of the two functions it replaces.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:1613 and :1752-1795 keep the excluded-path archive and the setup-failure naming that section s63 delivers, and the refactor at :2602 leaves both untouched.",
+    "reuse": "reckon/crew/landing_measure.py:2602 is the single removal loop both sweeps now call, and the uncalled sweep_this_node_arm_trees is deleted, so the prior reuse findings are answered and no new capability is forked in the gained diff.",
+    "scope_discipline": "d5216d34ae touches only reckon/crew/landing_measure.py and tests/test_a_partitioned_arm_unpacks_what_it_needs.py, and c48f8e4292 only the s63 fragment, all declared paths."
+  },
+  "previous_reviewed_head": "96869ab09157e1aa058748834b6e44e52853f6c4",
+  "project": "reckon",
+  "review_run_id": "r-20261124T093142019896-review-of-delivered-work-lands-without-a-coordinator-s63-c48f8e429261",
+  "reviewed_base_sha": "96869ab09157e1aa058748834b6e44e52853f6c4",
+  "reviewed_head_sha": "c48f8e42926139ff8211a31a7444fb8bed9c9fac",
+  "reviewed_run_id": "r-20261123T173056929818-delivered-work-lands-without-a-coordinator-s63",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T09:42:13.587708+00:00",
+  "total": 104,
+  "verdicts": {
+    "diff": "Read commit by commit against 96869ab091: d5216d34ae replaces the two copy-pasted tree sweeps with one _sweep_unheld_trees parameterised by directory, prefix and optional age bound, deletes the uncalled sweep_this_node_arm_trees, and adds four tests; c48f8e4292 corrects the fragment's free-space sentence and records the consolidation; nothing was authored outside the declared paths.",
+    "done_when": "The done_when names tests/test_a_partitioned_arm_unpacks_what_it_needs.py; its three required cases stand at :139 (excluded path, tests still run), :181 (setup failure records ENOSPC and node) and :217 (no declaration unpacks whole), gate-head.log records 3 passed EXIT=0 at 9683d8b1d9 and gate-base.log 2 failed, 1 passed EXIT=1 at bf5ff98 with the second case reading 'the base arm did not run', and the repair arms at the delivered head record 65 passed EXIT=0 against 58 passed EXIT=0 at the base.",
+    "goal": "Section s63's goal is that a partitioned arm unpacks only its project's excluded paths and that a setup failure is named with its node and error; at the reviewed head reckon/crew/landing_measure.py:1613 still reads arm_excluded_paths(config) in _partition_runner and :1752-1795 still records the setup failure's host and error text, and the two gained commits preserve both.",
+    "manifest": "Read; the reviewed manifest is status complete, lists twelve commits and the seven gate logs under the run directory, and names its negative-control log, but its baseline_suite and after_suite lines are prose rather than the JSON shape the record contract declares.",
+    "write_paths": "The node declared five write paths (the s63 fragment, its figure directory, reckon/crew/landing_measure.py, reckon/flight.py, tests/test_a_partitioned_arm_unpacks_what_it_needs.py); the two commits gained since the last review touch only the fragment, landing_measure.py and the test file, and the 170-path delivered set is mainline merge traffic carried by 99cf9f0195 and 929954a504."
+  }
+}
