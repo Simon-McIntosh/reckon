@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T07:59:08Z",
+  "findings": [
+    {
+      "file": "docs/figures/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2/render_fragment.py",
+      "line": 195,
+      "severity": "blocking",
+      "text": "the \u00a73 table builds each log path as \"logs/enforced/\" plus the full test filename plus \".log\", so all nine rows cite files such as logs/enforced/test_a_context_refusal_names_the_window.py.log that do not exist (the real files are the same stem without \".py\", and three cited tests have no per-file log at all), which makes the page's evidence column contradict the correct log list printed immediately above it."
+    },
+    {
+      "file": "docs/figures/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2/classify.py",
+      "line": 65,
+      "severity": "blocking",
+      "text": "the \"reconcile the status word the other way too\" rule at skills/reckon-build/references/worker-verification.md:144 is dispositioned \"delete as enforced\" on tests/test_manifest_parse_format.py::test_an_unknown_status_word_raises_naming_the_word_and_the_recognised, whose only assertion is a refusal of an invented vocabulary word and which never checks a valid complete against a run classification, so the done_when's \"drives the guarded action far enough to make the check fire\" is not met for that row."
+    },
+    {
+      "file": "docs/figures/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2/scan_head.py",
+      "line": 138,
+      "severity": "non-blocking",
+      "text": "sentences after the first in a paragraph are attributed to the line where the split landed rather than the line the sentence starts on, so 127 of 757 rows cite an earlier line (575 exact, the displaced rows 2 to 66 lines off; skills/reckon-build/references/worker-verification.md:144 is cited for a rule at line 151), which sends a reader following the locator to a different sentence."
+    },
+    {
+      "file": "docs/figures/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2/scan_head.py",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "it duplicates the binding-sentence scanner in docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/scan_binding.py, carrying a near-identical KEYWORDS regex, IMPERATIVE_VERBS set and abbreviation guard, rather than extending that owner to the twelve-file corpus, so the two counters can disagree about the same text."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit; 70359c8126 adds the three scripts and the fragment, c8253ad5 adds the log revision/result bullets.",
+    "done_when": "row-per-binding-count met and reproducible; one enforced row's test does not drive its rule (classify.py:65), and every \u00a73 log citation names a nonexistent file (render_fragment.py:195).",
+    "goal": "757 rows over twelve files; counts reproduced by re-running scan_head.py at bee04f7fb9 (2049 sentences, 757 binding).",
+    "manifest": "read; status complete, two commits, nine test files / 182 passed, negative control exit 2.",
+    "write_paths": "diff bee04f7fb9..c8253ad5 touches exactly the four declared paths."
+  },
+  "justifications": {
+    "durability": "the diff adds no test, and the renderer's citation refusal is exercised only by a hand-run negative control, so a drift in the 757/2049 counts would redden nothing.",
+    "evidence": "the counts reproduce exactly from scan_head.py at bee04f7fb9, but render_fragment.py:195 emits log paths that resolve to nothing and classify.py:65 cites a test that never drives its rule.",
+    "fit": "the scripts follow the per-fragment reproducibility idiom of docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/, though all three land without a trailing newline and classify.py:150 imports re inside a function.",
+    "goal_fidelity": "the fragment's \u00a72 table is generated from scan_head.py rather than retyped, but the file:line column it heads is wrong for roughly an eighth of rows (skills/reckon-build/SKILL.md:38 cites a sentence that sits at line 40).",
+    "reuse": "scan_head.py re-implements the sentence splitter already owned by docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/scan_binding.py (same keyword set, imperative-verb table and abbreviation guard) instead of generalising that owner to twelve files.",
+    "scope_discipline": "git diff --stat bee04f7fb9..c8253ad5 lists only the four declared paths, with no source, test or plan file touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is one row per binding sentence in the build skill and its references with enforcement, still-wanted and disposition; docs/evidence/fragments/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2.html carries 757 rows over twelve files, and re-running docs/figures/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2/scan_head.py at bee04f7fb9 reproduced 2049 sentences and 757 binding rows exactly, per-file.\nVERDICT done_when: the done_when asks for a row per binding sentence, each enforced row naming a test that drives the refusal or check to fire with its log cited, and the row count stated beside the total; the first and third are met and reproducible, but classify.py:65 pairs one enforced row with a test that does not drive its rule, and render_fragment.py:195 makes every \u00a73 log citation name a file that does not exist.\nVERDICT write_paths: the declared scope is docs/evidence/fragments/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2.html and docs/figures/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2; the diff bee04f7fb9..c8253ad5 touches exactly those four paths and nothing outside them.\nVERDICT manifest: read; it records status complete, commits 70359c8126 and c8253ad5, the nine test files with the 182-passed gate log, and a negative control whose log shows the renderer refusing a citation the logs never carried, exit 2 naming skills/reckon-build/SKILL.md:251.\nVERDICT diff: read commit by commit against bee04f7fb9; 70359c8126 adds scan_head.py, classify.py, render_fragment.py and the 851-line fragment, and c8253ad5 adds only the per-log revision and result bullets to \u00a73 of the page.\nCALL_SITES: none\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: the fragment's \u00a72 table is generated from scan_head.py rather than retyped, but the file:line column it heads is wrong for roughly an eighth of rows (skills/reckon-build/SKILL.md:38 cites a sentence that sits at line 40).\nSCORE evidence: 12\nJUSTIFICATION evidence: the counts reproduce exactly from scan_head.py at bee04f7fb9, but render_fragment.py:195 emits log paths that resolve to nothing and classify.py:65 cites a test that never drives its rule.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat bee04f7fb9..c8253ad5 lists only the four declared paths, with no source, test or plan file touched.\nSCORE durability: 8\nJUSTIFICATION durability: the diff adds no test, and the renderer's citation refusal is exercised only by a hand-run negative control, so a drift in the 757/2049 counts would redden nothing.\nSCORE fit: 15\nJUSTIFICATION fit: the scripts follow the per-fragment reproducibility idiom of docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/, though all three land without a trailing newline and classify.py:150 imports re inside a function.\nSCORE reuse: 5\nJUSTIFICATION reuse: scan_head.py re-implements the sentence splitter already owned by docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/scan_binding.py (same keyword set, imperative-verb table and abbreviation guard) instead of generalising that owner to twelve files.\nFINDING docs/figures/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2/render_fragment.py:195 blocking: the \u00a73 table builds each log path as \"logs/enforced/\" plus the full test filename plus \".log\", so all nine rows cite files such as logs/enforced/test_a_context_refusal_names_the_window.py.log that do not exist (the real files are the same stem without \".py\", and three cited tests have no per-file log at all), which makes the page's evidence column contradict the correct log list printed immediately above it.\nFINDING docs/figures/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2/classify.py:65 blocking: the \"reconcile the status word the other way too\" rule at skills/reckon-build/references/worker-verification.md:144 is dispositioned \"delete as enforced\" on tests/test_manifest_parse_format.py::test_an_unknown_status_word_raises_naming_the_word_and_the_recognised, whose only assertion is a refusal of an invented vocabulary word and which never checks a valid complete against a run classification, so the done_when's \"drives the guarded action far enough to make the check fire\" is not met for that row.\nFINDING docs/figures/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2/scan_head.py:138 non-blocking: sentences after the first in a paragraph are attributed to the line where the split landed rather than the line the sentence starts on, so 127 of 757 rows cite an earlier line (575 are exact, the displaced rows sit 2 to 66 lines off; skills/reckon-build/references/worker-verification.md:144 is cited for a rule at line 151), which sends a reader following the locator to a different sentence.\nFINDING docs/figures/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2/scan_head.py:1 non-blocking: it duplicates the binding-sentence scanner in docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/scan_binding.py, carrying a near-identical KEYWORDS regex, IMPERATIVE_VERBS set and abbreviation guard, rather than extending that owner to the twelve-file corpus, so the two counters can disagree about the same text.\n",
+  "review_run_id": "r-20261123T212254391882-review-of-the-crew-contract-fits-one-read-s2-c8253ad5ce74",
+  "reviewed_base_sha": "bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae",
+  "reviewed_head_sha": "c8253ad5ce7436f0561b076b5dd255a84c553794",
+  "reviewed_run_id": "r-20261123T165652287097-the-crew-contract-fits-one-read-s2",
+  "scores": {
+    "durability": 8,
+    "evidence": 12,
+    "fit": 15,
+    "goal_fidelity": 13,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T08:33:27.164777+00:00",
+  "total": 72
+}
