@@ -66,6 +66,7 @@ import json
 import os
 import re
 import secrets
+import warnings
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import ExitStack, contextmanager, suppress
@@ -1953,6 +1954,27 @@ def _write_state_locked(
         # open gates. The successor is written only after this plan has landed,
         # so a refused source write moves nothing.
         _write_successor_moves(successor_moves, root)
+    if (
+        state_type == "plan"
+        and docs_dir is not None
+        and html_file is not None
+        and current_status not in TERMINAL_STATUSES
+        and requested_status in _LANDED_STATUSES
+    ):
+        # A plan's report is written once, when it reaches a terminal status,
+        # and says which plan it documents and which sprint it ran in. The
+        # close has already passed its guards and this file is the record of a
+        # decision taken, so a composition failure cannot undo it: the close
+        # stands and the caller is told the record was not written.
+        from reckon import evidence
+
+        try:
+            evidence.compose_closed_plan_report(docs_dir, project, slug)
+        except (evidence.EvidenceSynthesisError, OSError) as exc:
+            warnings.warn(
+                f"plan {project}/{slug} closed but its report was not composed: {exc}",
+                stacklevel=2,
+            )
     return new_data["version"]
 
 
