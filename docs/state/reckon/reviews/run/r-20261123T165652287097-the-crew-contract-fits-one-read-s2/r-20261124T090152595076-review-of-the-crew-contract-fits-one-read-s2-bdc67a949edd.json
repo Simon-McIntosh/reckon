@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T09:02:44Z",
+  "findings": [
+    {
+      "file": "docs/figures/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2/scan_head.py",
+      "line": 36,
+      "severity": "non-blocking",
+      "text": "KEYWORDS and IMPERATIVE_VERBS are imported but never used in the module, existing only for the identity assertion at test_binding_inventory.py:120, so ruff reports F401 and the diff adds findings over its base (13 vs 8, also scan_head.py:105,107 PLW2901 and test_binding_inventory.py:97,126 PLW1510/RUF059)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T165652287097-the-crew-contract-fits-one-read-s2/logs/inventory-checks.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The gate log's header names rev=c8253ad5ce, a revision that does not contain test_binding_inventory.py (added in 9c8bdd4029), so the recorded pass ran against an uncommitted tree and cannot be reproduced from the revision it cites; re-running at head bdc67a949e gives the same 5 passed EXIT=0, so the result stands but its provenance line does not."
+    },
+    {
+      "file": "docs/figures/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2/scan_head.py",
+      "line": 79,
+      "severity": "non-blocking",
+      "text": "sentences_with_lines stays a second sentence-splitting implementation beside docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/scan_binding.py:88, which still carries the displaced locator this round repaired locally, so the vocabulary is shared by identity but the walk was not extended into its owner as the earlier finding recommended."
+    },
+    {
+      "file": "docs/evidence/fragments/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2.html",
+      "line": 942,
+      "severity": "non-blocking",
+      "text": "The claim that every cited test node id was run at this head is contradicted by the page's own log list, which records bee04f7fb9 for s9-cited-nodeids.log and s9-cited-nodeids-2.log and c8253ad5ce for s9-statusreconcile.log, and the new tenth row now inherits that claim."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit: 9c8bdd4029 is the repair, bdc67a949e adds one cited-log line.",
+    "done_when": "the gate test_binding_inventory.py records 5 passed EXIT=0 and passes at head; every enforced row's test resolves to an arm log whose command ran it.",
+    "goal": "883 rows over 2049 sentences, one row per binding sentence; locators spot-checked correct at worker-verification.md:140,144,151,152,155.",
+    "manifest": "read; status complete; commits, gate result and four negative controls recorded.",
+    "write_paths": "the gained-commit diff touches only the four declared paths plus scan_head.py and test_binding_inventory.py inside the declared directory."
+  },
+  "justifications": {
+    "durability": "the arms at test_binding_inventory.py:53,93,126 fail on the regressions they guard, but no test asserts the 883/2049 counts.",
+    "evidence": "test_binding_inventory.py passes at bdc67a949e, but logs/inventory-checks.log:1 records a revision that does not contain the test.",
+    "fit": "the scripts follow the fragment idiom, but the diff adds ruff findings over its base, including scan_head.py:36-37 F401.",
+    "goal_fidelity": "docs/evidence/fragments/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2.html tbody 3 has 883 rows and rows 829-832 locate worker-verification.md at the lines their sentences start on.",
+    "reuse": "scan_head.py:34 imports the owner's vocabulary and test_binding_inventory.py:120 asserts identity, though scan_head.py:79 keeps a second sentence walk.",
+    "scope_discipline": "git diff --stat c8253ad5ce..bdc67a949e lists only the five paths, all inside the declared scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is one row per binding sentence in the build skill and its references, and the gained commits repair that table; docs/evidence/fragments/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2.html carries 883 rows over 2049 sentences, and spot-checked at skills/reckon-build/references/worker-verification.md:140,144,151,152,155 each row now names the line its sentence starts on.\nVERDICT done_when: the gate docs/figures/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2/test_binding_inventory.py is recorded in logs/inventory-checks.log as 5 passed EXIT=0 and re-run at head bdc67a949e gives the same result; every enforced row's test resolves to an arm log whose command ran that node id, and the renderer refuses a row no arm ran.\nVERDICT write_paths: the incremental diff c8253ad5ce..bdc67a949e touches the four declared paths plus scan_head.py and test_binding_inventory.py, both inside the declared directory docs/figures/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2.\nVERDICT manifest: read; status complete, commits 70359c8126, c8253ad5ce, 9c8bdd4029 and bdc67a949e, the gate result 5 passed EXIT=0, and four negative controls each logged.\nVERDICT diff: read commit by commit; 9c8bdd4029 rewrites scan_head.py's locator and imports the owner vocabulary, gives render_fragment.py a log-for-test mapping plus a refusal, repoints classify.py's status row, and adds test_binding_inventory.py; bdc67a949e adds one cited-log line to the page.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2.html tbody 3 has 883 rows and rows 829-832 locate worker-verification.md at 144, 151, 152 and 155, the lines those sentences start on.\nSCORE evidence: 15\nJUSTIFICATION evidence: docs/figures/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2/test_binding_inventory.py passes at bdc67a949e (5 passed), but logs/inventory-checks.log:1 records revision c8253ad5ce, which does not contain that test.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat c8253ad5ce..bdc67a949e lists only the five paths, all inside the declared evidence fragment and its figures directory.\nSCORE durability: 16\nJUSTIFICATION durability: test_binding_inventory.py:53 and :93 fail if the log mapping reverts to a filename-derived path, and :126 fails if scan_head.py:36 redefines the vocabulary rather than importing it, but no test asserts the 883/2049 counts.\nSCORE fit: 14\nJUSTIFICATION fit: the scripts follow the per-fragment idiom beside classify-rules-in-the-skill/, but the diff adds ruff findings over its base (13 vs 8), including scan_head.py:36-37 F401 and test_binding_inventory.py:97,126.\nSCORE reuse: 15\nJUSTIFICATION reuse: scan_head.py:34 imports the keyword set, imperative table, abbreviation guard and cleaner from docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/scan_binding.py and test_binding_inventory.py:120 asserts that identity, though scan_head.py:79 keeps a second sentence walk.\nFINDING docs/figures/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2/scan_head.py:36 non-blocking: KEYWORDS and IMPERATIVE_VERBS are imported but never used in the module, existing only for the identity assertion at test_binding_inventory.py:120, so ruff reports F401 and the diff adds findings over its base (13 vs 8, also scan_head.py:105,107 PLW2901 and test_binding_inventory.py:97,126 PLW1510/RUF059).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T165652287097-the-crew-contract-fits-one-read-s2/logs/inventory-checks.log:1 non-blocking: the gate log's header names rev=c8253ad5ce, a revision that does not contain test_binding_inventory.py (added in 9c8bdd4029), so the recorded pass ran against an uncommitted tree and cannot be reproduced from the revision it cites; re-running at head bdc67a949e gives the same 5 passed EXIT=0, so the result stands but its provenance line does not.\nFINDING docs/figures/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2/scan_head.py:79 non-blocking: sentences_with_lines stays a second sentence-splitting implementation beside docs/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/scan_binding.py:88, which still carries the displaced locator this round repaired locally, so the vocabulary is shared by identity but the walk was not extended into its owner as the earlier finding recommended.\nFINDING docs/evidence/fragments/the-crew-contract-fits-one-read/the-crew-contract-fits-one-read-s2.html:942 non-blocking: the claim that every cited test node id was run at this head is contradicted by the page's own log list, which records bee04f7fb9 for s9-cited-nodeids.log and s9-cited-nodeids-2.log and c8253ad5ce for s9-statusreconcile.log, and the new tenth row now inherits that claim.\n",
+  "review_run_id": "r-20261124T090152595076-review-of-the-crew-contract-fits-one-read-s2-bdc67a949edd",
+  "reviewed_base_sha": "c8253ad5ce7436f0561b076b5dd255a84c553794",
+  "reviewed_head_sha": "bdc67a949edd31530c8c06e7f3444796461e4e85",
+  "reviewed_run_id": "r-20261123T165652287097-the-crew-contract-fits-one-read-s2",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T09:15:54.579912+00:00",
+  "total": 97
+}
