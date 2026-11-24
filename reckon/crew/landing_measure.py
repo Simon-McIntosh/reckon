@@ -2550,7 +2550,7 @@ def sweep_arm_trees_entry(limit: str, node: str) -> None:
 
 
 def arm_sweep_command(limit_seconds: float, source: str | Path) -> str:
-    """The shell step a job runs to sweep stale trees on the node it lands on."""
+    """The shell command a job runs to sweep stale trees on its own node."""
     call = (
         "import sys; "
         "from reckon.crew.landing_measure import sweep_arm_trees_entry as sweep; "

@@ -162,7 +162,7 @@ def test_the_sweep_runs_from_its_job_entry_point(
 
 
 def test_the_sweep_command_names_the_entry_point_and_the_bound():
-    """The shell step a job runs carries the program, the sweep and the limit."""
+    """The shell command a job runs carries the program, the sweep and the limit."""
     command = landing_measure.arm_sweep_command(
         LIMIT_SECONDS, Path("/home/example/reckon")
     )
