@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling,spa">
   <meta name="plan-after" content="crew-state-stays-bounded">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-report-is-kept-only-when-persisted#s2&quot;,&quot;a-report-is-kept-only-when-persisted#s4&quot;],&quot;s4&quot;:[&quot;a-report-is-kept-only-when-persisted#s2&quot;],&quot;s5&quot;:[&quot;a-report-is-kept-only-when-persisted#s3&quot;,&quot;a-report-is-kept-only-when-persisted#s4&quot;],&quot;s9&quot;:[&quot;a-report-is-kept-only-when-persisted#s8&quot;],&quot;s10&quot;:[&quot;a-report-is-kept-only-when-persisted#s8&quot;],&quot;s11&quot;:[&quot;a-report-is-kept-only-when-persisted#s7&quot;]}">
   <title>A report is kept only when persisted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="38">
+<meta name="plan-version" content="39">
 <meta name="plan-modified" content="2026-11-24">
 </head>
 <body>
@@ -204,7 +204,7 @@
     <p><strong>Negative control.</strong> At the base revision, the first case must fail, with the sprint absent from the record.</p>
 
     <h2 id="s9">§9 — A sprint's closing report names its sprint and links each plan's report</h2>
-<section data-reckon="section" data-id="s9" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s9" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>Every sprint close already writes one closing page, <code>docs/evidence/archive/&lt;sprint&gt;-closing.html</code>, with one row per member plan carrying its status, sections landed, headline result and figures, and a second close overwrites it in place. Three things the lead reads a sprint for are missing from it: the sprint's theme, a link from each plan's row to that plan's evidence report rather than to the plan document, and, for a plan still open, the sprint it was carried to.</p>
     <p><strong>Deliverable.</strong> The sprint closing page names the sprint's theme, links each member plan's row to that plan's evidence report where one exists and to the plan document otherwise, and lists a member plan still open as carried, with the sprint it moves to when it has one. Everything the page does today is unchanged.</p>
     <p><strong>Done when.</strong> <code>tests/test_a_closed_sprint_has_a_report_naming_its_plans.py</code> passes, covering: closing a sprint of three plans, two closed with evidence reports and one still open and moved to another sprint, yields a page that states the theme, links the two plans' rows to their evidence reports, and lists the third as carried to the named sprint; and the page's existing rows, figures and single-file overwrite are unchanged. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. Write paths: <code>reckon/evidence.py</code> and the new test. It adds no new public definition.</p>
@@ -233,6 +233,9 @@
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261124T062027807584-review-of-a-report-is-kept-only-when-persisted-s10-7e0d94fb1fe3" data-who="reckon-build" data-when="2026-11-24T06:28:17.938Z">
+    <div class="r-comment-body"><p>Independent review of head 7e0d94fb1f scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 17, fit 18, reuse 19; added_failure_count 0 with an empty id list derived from arm-base.log (24 failed/1668 passed) and arm-head.log (19 failed/1673 passed); three non-blocking findings: the fragment misstates the base-only failure count, the healthy-composition test's is_file assertion is pre-satisfied by its own frame, and the head gate log names the base revision.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261113T035545337638-review-of-a-persisted-item-has-a-record-and-a-home-outside-7623bbe1fc34" data-who="reckon-build" data-when="2026-11-13T04:25:18.679Z">
     <div class="r-comment-body"><p>Independent review of r-20261112T060815185379-a-persisted-item-has-a-record-and-a-home-outside at 7623bbe1fc344988192eeb63e4d99e0a2b31b9d4 against base 1f190e0ba4db58a328557b76138f03f078a9a1fe: goal_fidelity 18, evidence 14, scope_discipline 13, durability 16, fit 18, reuse 5; six non-blocking findings, the strongest being a verbatim _sha256_path clone of reckon/project_state.py:361 at reckon/crew/persist.py:109.</p></div>
 </div>
@@ -282,10 +285,7 @@
     <div class="r-comment-body"><p>Reviewed head 5b506ea5 (base 3a906bc0): goal_fidelity 19, evidence 14, scope_discipline 19, durability 17, fit 18, reuse 16; added_failure_count 0; three non-blocking findings (served-address duplication, display-sentinel comparison, gate omitted the pre-existing closing-page test), no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261122T184936145500-a-report-is-kept-only-when-persisted-s9" data-who="reckon-build" data-when="2026-11-24T05:05:13.434Z">
-    <div class="r-comment-body"><p>Closing a sprint now writes a page that states the sprint&#x27;s theme (visible block and metadata), links each member plan&#x27;s row to that plan&#x27;s evidence report where one exists and to the plan document otherwise, and marks a still-open plan as carried to the sprint the close moved it to; 6 new tests pass, and the negative control at the base revision fails the first case with no theme stated.</p></div>
-</div>
-<div class="r-comment" data-section="s10" data-id="c-run-r-20261124T062027807584-review-of-a-report-is-kept-only-when-persisted-s10-7e0d94fb1fe3" data-who="reckon-build" data-when="2026-11-24T06:28:17.938Z">
-    <div class="r-comment-body"><p>Independent review of head 7e0d94fb1f scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 17, fit 18, reuse 19; added_failure_count 0 with an empty id list derived from arm-base.log (24 failed/1668 passed) and arm-head.log (19 failed/1673 passed); three non-blocking findings: the fragment misstates the base-only failure count, the healthy-composition test's is_file assertion is pre-satisfied by its own frame, and the head gate log names the base revision.</p></div>
+    <div class="r-comment-body"><p>Closing a sprint now writes a page that states the sprint's theme (visible block and metadata), links each member plan's row to that plan's evidence report where one exists and to the plan document otherwise, and marks a still-open plan as carried to the sprint the close moved it to; 6 new tests pass, and the negative control at the base revision fails the first case with no theme stated.</p></div>
 </div>
 </section>
 </main>
