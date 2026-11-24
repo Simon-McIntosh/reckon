@@ -24,7 +24,7 @@
   <title>Queued work needs no workaround | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1197">
+<meta name="plan-version" content="1198">
 <meta name="plan-modified" content="2026-11-24">
 <meta name="plan-section-depends-on" content="{&quot;s24&quot;:[&quot;queued-work-needs-no-workaround#s23&quot;]}">
 </head>
@@ -3721,13 +3721,16 @@
     <div class="r-comment-body"><p>none — a review node delivers a review record, not a plan change</p></div>
 </div>
 <div class="r-comment" data-section="s48" data-id="c-run-r-20261123T182815880028-qwnw-a-last-node-landing-moves-impl" data-who="reckon-build" data-when="2026-11-23T23:53:31Z">
-    <div class="r-comment-body"><p>When the promoting run is its section&#x27;s last open node and its own live pointer is present, the landing records the section done after its own plan write has committed, through the same edit surface a coordinator uses, and commits that closure as its own commit naming the run, so the plan&#x27;s derived impl advances with the run that closed the section and the promotion passes with no --no-impl-change. A landing refused before its write records no declaration and reverts nothing a coordinator wrote; a state write a coordinator made after staging survives a refused landing. A node that leaves a sibling of its section open lands with the section still implementable, impl unchanged and no override. A closure that cannot be written or committed after the landing commits is reported in the promotion receipt as plan_closure rather than raised. The last-node question is asked of pending_landing.nodes_awaiting_landing, so an open node is one queued, waiting for its upstream, working, or delivered and unlanded, and a second pointer serving the landing&#x27;s own dispatch node is not a second node. A failed or stopped sibling therefore does not hold the section open.</p></div>
+    <div class="r-comment-body"><p>When the promoting run is its section's last open node and its own live pointer is present, the landing records the section done after its own plan write has committed, through the same edit surface a coordinator uses, and commits that closure as its own commit naming the run, so the plan's derived impl advances with the run that closed the section and the promotion passes with no --no-impl-change. A landing refused before its write records no declaration and reverts nothing a coordinator wrote; a state write a coordinator made after staging survives a refused landing. A node that leaves a sibling of its section open lands with the section still implementable, impl unchanged and no override. A closure that cannot be written or committed after the landing commits is reported in the promotion receipt as plan_closure rather than raised. The last-node question is asked of pending_landing.nodes_awaiting_landing, so an open node is one queued, waiting for its upstream, working, or delivered and unlanded, and a second pointer serving the landing's own dispatch node is not a second node. A failed or stopped sibling therefore does not hold the section open.</p></div>
 </div>
 <div class="r-comment" data-section="s49" data-id="c-run-r-20261123T234302452256-review-of-qwnw-one-delivered-head-gets-one-review-af562db73848" data-who="reckon-build" data-when="2026-11-23T23:53:40.080Z">
     <div class="r-comment-body"><p>no landing — this is a review node; it stores one parsed review record for r-20261123T222545133163-qwnw-one-delivered-head-gets-one-review at af562db738, scoring goal_fidelity 18, evidence 15, scope_discipline 18, durability 16, fit 16, reuse 5, with 0 added failures and three non-blocking findings</p></div>
 </div>
 <div class="r-comment" data-section="s49" data-id="c-run-r-20261124T002038045328-review-of-qwnw-one-delivered-head-gets-one-review-2f79c541c927" data-who="reckon-build" data-when="2026-11-24T00:30:55.511Z">
     <div class="r-comment-body"><p>review of r-20261123T222545133163-qwnw-one-delivered-head-gets-one-review stored at review-records/ scoring goal_fidelity 19, evidence 18, scope_discipline 19, durability 18, fit 18, reuse 16 (total 108), reviewed af562db738..2f79c541c9, added_failure_count 0 with no ids, one non-blocking finding; no plan file edited by this run.</p></div>
+</div>
+<div class="r-comment" data-section="s49" data-id="c-run-r-20261124T063101166990-review-of-qwnw-one-delivered-head-gets-one-review-74185d1ee89b" data-who="reckon-build" data-when="2026-11-24T06:40:32.824Z">
+    <div class="r-comment-body"><p>review record filed for r-20261123T222545133163-qwnw-one-delivered-head-gets-one-review at reviewed_base_sha 2f79c541c927609228805e5829400a44456e632c and reviewed_head_sha 74185d1ee89b82e5a2f9ffc314cf633c2f8fc464; scores goal_fidelity 18, evidence 14, scope_discipline 19, durability 10, fit 17, reuse 18; added_failure_count 0; one blocking finding</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261114T200845603829-qwnw-dispatch-prints-one-json-document-and-a-fresh-re" data-who="reckon-build" data-when="2026-11-14T21:26:23.637Z">
     <div class="r-comment-body"><p>not attempted; the coordinator merges this commit, and nothing was pushed</p></div>

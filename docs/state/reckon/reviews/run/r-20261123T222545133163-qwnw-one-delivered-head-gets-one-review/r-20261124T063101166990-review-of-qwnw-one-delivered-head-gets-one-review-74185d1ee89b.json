@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:3267 _dispatch_text_review_for_run",
+    "reckon/crew/recovery_review_dispatch.py:3427 _dispatch_figure_review_for_run",
+    "reckon/crew/recovery_review_dispatch.py:4180 dispatch_review_for_run",
+    "reckon/crew/recovery_watch.py:4560",
+    "reckon/crew/recovery_review_acceptance.py:1742",
+    "reckon/crew/pending_landing.py:1230 _repair_review_wait",
+    "reckon/crew_run_commands.py:385"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T06:31:29Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "3126",
+      "severity": "blocking",
+      "text": "blocking: adding \"refused\": True to the in-flight refusals (code at :3126, figure at :3429) makes an ordinary in-flight review read as a refused landing attempt. reckon/crew/pending_landing.py:1230 computes `refused = ... or bool(report.get(\"refused\"))`, so a delivered run whose review is simply still running is now recorded with queue_landing._record_attempt(status=\"refused\") at :1244 and reported status \"review-refused\" at :1268, where before it reached _record_awaiting_review and status \"awaiting-review\". That refusal record is what reckon/crew/obligations.py:3495 turns into a `landing-refused` duty reading \"automatic landing refused: repair code review: a review of run ... is already in flight ...\", so a coordinator is told to repair a healthy review that is merely running. The winner-naming change needs no `refused` key; either drop the key from the two in-flight refusals or teach pending_landing._repair_review_wait to read an in-flight review as awaiting rather than refused."
+    },
+    {
+      "file": "tests/test_one_delivered_head_gets_one_review.py",
+      "line": "387",
+      "severity": "non-blocking",
+      "text": "non-blocking: the figure-review in-flight refusal's new winner-naming text (reckon/crew/recovery_review_dispatch.py:3429) has no deterministic assertion. The eight-at-once case asserts the winner appears in each loser's reason, and test_a_code_review_and_a_figure_review_each_get_one (:387) only counts the launched runs; the figure losers usually lose at the claim, whose reason already named the winner, so reverting the figure in-flight sentence would leave the suite green. Add a case that stands a young figure review in flight and asserts its reason names it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit from 2f79c541c9 to 74185d1ee8: cf3d509bd0 adds refused/review-naming to the two in-flight refusals and rewrites one test's assertion, 077c29178e, 3df596585a and 74185d1ee8 record the repetition measurement and correct arm rows in the evidence fragment",
+    "done_when": "the done-when's three cases are tests/test_one_delivered_head_gets_one_review.py:311, :347 and :387; the manifest records 3 passed at aaa12aa153 and twenty consecutive -n 8 repetitions at 077c29178e (logs/concurrency-20.log, last line EXIT=0), and the base arm red at 6223efd28c (logs/negative-control.log, 1 failed, EXIT=1)",
+    "goal": "the gained commits complete the endpoint that every refusal names the review that won: reckon/crew/recovery_review_dispatch.py:3126 (code) and :3429 (figure) now name the in-flight run in the reason, matching the claim refusal at :4524",
+    "manifest": "read; it names the twelve commits, the base and head suite arms (58 passed / 61 passed), the twenty-repetition log, the negative controls and the outside-scope attribution of the leaked live pointer",
+    "write_paths": "the gained commits 2f79c541c9..74185d1ee8 touch reckon/crew/recovery_review_dispatch.py, tests/test_stranded_launch_releases_its_claim.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-one-delivered-head-gets-one-review.html, all inside the run's declared scope"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained commits complete the endpoint that every refusal names the review that won; reckon/crew/recovery_review_dispatch.py:3126 and :3429 now name the in-flight run in the reason, matching the claim refusal at :4524.\nVERDICT done_when: tests/test_one_delivered_head_gets_one_review.py:311, :347 and :387 implement the three named cases; the manifest records 3 passed at aaa12aa153 and twenty -n 8 repetitions at 077c29178e (logs/concurrency-20.log ends EXIT=0), and the base arm is red at 6223efd28c (logs/negative-control.log, 1 failed, EXIT=1).\nVERDICT write_paths: the gained commits 2f79c541c9..74185d1ee8 touch reckon/crew/recovery_review_dispatch.py, tests/test_stranded_launch_releases_its_claim.py and docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-one-delivered-head-gets-one-review.html, all inside the run's declared scope.\nVERDICT manifest: read; it names the twelve commits, the 58-passed base and 61-passed head suite arms, the twenty-repetition log, the negative controls and the outside-scope leaked pointer.\nVERDICT diff: read commit by commit from 2f79c541c9 to 74185d1ee8; cf3d509bd0 adds refused and winner-naming to the two in-flight refusals and rewrites one test assertion, 077c29178e, 3df596585a and 74185d1ee8 record the repetition measurement and correct the evidence fragment's arm rows.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:3267 _dispatch_text_review_for_run, reckon/crew/recovery_review_dispatch.py:3427 _dispatch_figure_review_for_run, reckon/crew/recovery_review_dispatch.py:4180 dispatch_review_for_run, reckon/crew/recovery_watch.py:4560, reckon/crew/recovery_review_acceptance.py:1742, reckon/crew/pending_landing.py:1230 _repair_review_wait, reckon/crew_run_commands.py:385\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:3126 and :3429 name the in-flight review in the refusal, so every refusal a delivered-head dispatch answers with now says which review won.\nSCORE evidence: 14\nJUSTIFICATION evidence: the done-when's arms are recorded and reproducible (logs/concurrency-20.log ends `passes=20 fails=0 of 20 runs` then `EXIT=0`), but the delta's behavioural side effect on the lander is neither measured nor mentioned in the evidence fragment.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in 2f79c541c9..74185d1ee8 is one of the run's declared write paths; no plan file and no figure were touched.\nSCORE durability: 10\nJUSTIFICATION durability: tests/test_stranded_launch_releases_its_claim.py:146-158 asserts the refusal names the code review, but no test pins the figure-reason text or the awaiting-review classification the `refused` key changed, so that regression passes the suite green.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/recovery_review_dispatch.py:3129 uses the same wording as the claim refusal at :4520 and introduces no plan or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: the delta adds no definition; it reuses the existing refusal-dict shape and the claim refusal's sentence rather than forking a second vocabulary.\nFINDING reckon/crew/recovery_review_dispatch.py:3126 blocking: adding \"refused\": True to the in-flight refusals (code at :3126, figure at :3429) makes a review that is merely in flight read as a refused landing: reckon/crew/pending_landing.py:1230 now takes the _record_attempt(status=\"refused\") branch (:1244) and reports \"review-refused\" (:1268) where it recorded awaiting-review before, and reckon/crew/obligations.py:3495 turns that into a landing-refused duty telling a coordinator to repair a healthy running review.\nFINDING tests/test_one_delivered_head_gets_one_review.py:387 non-blocking: the figure in-flight refusal's new winner-naming reason at reckon/crew/recovery_review_dispatch.py:3429 has no deterministic assertion; the figure case only counts launched runs and the racing losers usually lose at the claim, so a revert of that sentence leaves the suite green.\n",
+  "review_run_id": "r-20261124T063101166990-review-of-qwnw-one-delivered-head-gets-one-review-74185d1ee89b",
+  "reviewed_base_sha": "2f79c541c927609228805e5829400a44456e632c",
+  "reviewed_head_sha": "74185d1ee89b82e5a2f9ffc314cf633c2f8fc464",
+  "reviewed_run_id": "r-20261123T222545133163-qwnw-one-delivered-head-gets-one-review",
+  "scores": {
+    "durability": 10,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T06:47:10.674164+00:00",
+  "total": 96
+}
