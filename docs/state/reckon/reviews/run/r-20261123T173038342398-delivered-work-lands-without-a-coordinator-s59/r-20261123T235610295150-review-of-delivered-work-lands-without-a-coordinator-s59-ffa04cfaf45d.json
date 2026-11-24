@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/landing_measure.py:measure_run",
+    "reckon/crew/landing_measure.py:_partition_runner",
+    "reckon/crew/promotion_gate.py:_rerun_gate_at_integrated_revision",
+    "reckon/crew/promotion_gate.py:domain_check_rows",
+    "reckon/crew/recovery_review_acceptance.py:752"
+  ],
+  "checklist": {
+    "call_sites": "opened landing_measure.measure_run:245 and _partition_runner:1386, promotion_gate._rerun_gate_at_integrated_revision:1104 (the changed caller) and the domain-check summary:1586, and recovery_review_acceptance.py:752; all reach partition_submission, whose job bound the new helper now shares with the waiter.",
+    "diff": "read the four gained commits commit by commit over fcafde86..ffa04cf: one fix (5286a3dd07), one test reorder (9846ffc8f7), two additive evidence commits (08c2e244f3, ffa04cfaf4); the fix centralises the bound in landing_measure.gate_bound_seconds and makes the replay's wait and its cut-short message follow it.",
+    "done_when": "read; the gate names tests/test_a_gate_profile_reaches_every_submission.py; the manifest records the base arm (58 passed, EXIT=0, bee04f7f) and the head arm (64 passed, EXIT=0, 08c2e244), a delta of 0 added failures, and a negative-control log that fails at fcafde86.",
+    "goal": "read; the node goal is that a project names the scheduler profile its gate arms run under, and reckon/crew/landing_measure.py:1110 gate_profiles plus :1131 gate_profile implement it, now including the replayed gate's submission and its client wait.",
+    "manifest": "read; status complete, commits 0087fa7291..08c2e244f3 recorded plus the evidence commits, baseline_suite and after_suite both completed with exit 0 and no failure ids, and the repair's checkpoint stated.",
+    "write_paths": "read the nine declared paths; the four gained commits touch only reckon/crew/promotion_gate.py, reckon/crew/landing_measure.py, tests/test_a_gate_profile_reaches_every_submission.py and the evidence fragment, all inside the declared scope."
+  },
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T23:56:32Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_gate.py",
+      "line": 1511,
+      "severity": "non-blocking",
+      "text": "the cut-short sentence now receives the profile-raised job bound while bound_source still describes the pre-profile bound, so a bound a gate profile supplied is reported as 'named by the caller' or 'the default, as no gate duration is recorded' at promotion_gate.py:1043 _replay_cut_short_reason; the durable replay log and the refusal text therefore misattribute where the bound came from"
+    },
+    {
+      "file": "reckon/crew/promotion_gate.py",
+      "line": 1611,
+      "severity": "non-blocking",
+      "text": "a domain-check row records replay_bound_seconds from report (the unraised resolved bound, e.g. 600) while its detail names the raised job bound from _replay_cut_short_reason (e.g. 14400), so one durable row states two different bounds and a reader cannot tell which the job ran under; the new report['replay_job_bound_seconds'] is not carried onto the row"
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261123T235610295150-review-of-delivered-work-lands-without-a-coordinator-s59-ffa04cfaf45d",
+  "reviewed_base_sha": "bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae",
+  "reviewed_head_sha": "ffa04cfaf45dc69b72f90244738bc768d7e42dc6",
+  "reviewed_run_id": "r-20261123T173038342398-delivered-work-lands-without-a-coordinator-s59",
+  "rubric": "landed_review",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T00:14:22.094310+00:00",
+  "total": 112
+}
