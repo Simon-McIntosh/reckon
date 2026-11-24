@@ -1,0 +1,69 @@
+<section id="delivered-work-lands-without-a-coordinator-s66-landing">
+  <h2>A ledger row that cites the wrong commit is corrected from its merge</h2>
+
+  <p>A landing pass can record a delivery the primary branch already carried
+  against the branch tip at the time of the pass rather than against the run's
+  own head, so the run's row ends up citing an unrelated promotion. The row is
+  written once and has no append path: <code>crew record-merge</code> refused
+  any run the ledger already held, with <em>run '…' is already recorded in the
+  'proj' ledger; a run the ledger holds is not recorded again — read its row
+  instead</em>. Every reader of that run's reviewed head therefore read a
+  revision the review never covered, and nothing could repair it. At the base
+  revision <code>d7f54a14d1dcf7ae8054acd61fbf1a2e20d0425e</code> the node's
+  four cases fail, the first on exactly that refusal, as
+  <code>negative-control.log</code> records (<code>4 failed in 1.94s</code>,
+  <code>EXIT=1</code>).</p>
+
+  <p><strong>What changed.</strong> <code>crew record-merge</code>, given a run
+  whose row the ledger already holds, now resolves the run from its stored row
+  alone and corrects the row instead of refusing. The reviewed head is read from
+  the merge that carried it — the second parent of a <code>--no-ff</code> merge
+  — and the row's <code>commits</code> and <code>promoted_revision</code> are
+  replaced with that head and the merge is recorded in
+  <code>recorded_merge</code>. Because the run is resolved from the row, the
+  correction works with no live pointer and no run directory, which is the state
+  a misattributed row outlives.</p>
+
+  <p><strong>What is kept.</strong> The citation that was replaced is kept beside
+  the corrected fields in a <code>citation_superseded</code> block naming the old
+  <code>commits</code> and <code>promoted_revision</code>, the corrected head,
+  the merge, the time and the caller's reason. What a promotion believed when it
+  landed is evidence in its own right, and a later reader has to see what was
+  wrong rather than a row that silently changed. The corrected row is committed
+  through the landing helper every store write already uses, under a
+  <code>record-merge(&lt;run&gt;): correct a row's commit citation</code>
+  subject, with the row file and the aggregate ledger staged by name.</p>
+
+  <p><strong>What refuses.</strong> A row that already cites the head its merge
+  carried is left byte-identical and writes no superseded block and no commit,
+  so running the verb twice cannot append a second correction. A commit with no
+  second parent names no head at all, so it is refused with <em>merge … carries
+  no second parent, so it names no reviewed head this row's citation can be
+  corrected to</em> and the row untouched; the verb never guesses a head. A
+  correction with an empty <code>--reason</code> is refused, because the
+  superseded block exists to say why.</p>
+
+  <p><strong>Measure.</strong> The population the changed module reaches — 32
+  test files plus the node's own — ran on <code>rigel</code> at both revisions,
+  each in its own node-local scratch. At the base
+  <code>d7f54a14d1dcf7ae8054acd61fbf1a2e20d0425e</code>, over a tree carrying
+  the node's new test file against the base source, the population reports
+  <code>20 failed, 531 passed in 2427.59s (0:40:27)</code> with
+  <code>EXIT=1</code>; four of those are the node's own four cases failing on
+  the old refusal and sixteen are environment-dependent tests that fail the same
+  way at both revisions. At the head
+  <code>1d98180fc9254e7bc3dc0fb4264e248f2db33283</code> the population reports
+  <code>16 failed, 535 passed in 1762.53s (0:29:22)</code> with
+  <code>EXIT=1</code>, and its sixteen failures are exactly the base arm's
+  sixteen: the node's four cases disappear and no failure id is added.</p>
+
+  <p><strong>The two arms and why the first pair was discarded.</strong> The
+  first pair on <code>all_debug</code> reported 43 failed with 70 errors and 21
+  failed with 167 errors, dominated by
+  <code>OSError: could not create numbered dir with prefix reckon-home</code>
+  on <code>98dci4-clu-3141</code>, whose <code>/tmp</code> was 100% full. That
+  is the host, not the change, so both arms were rerun with node-local scratch
+  on <code>rigel</code>, each arm naming its host, its revision, its tree, the
+  module under test as imported, its working directory and the literal command,
+  and ending with a bare <code>EXIT=</code> line.</p>
+</section>
