@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:_edit_plan",
+    "reckon/_store.py:write_plan",
+    "reckon/_store.py:_write_state_locked",
+    "reckon/crew/promotion_scope.py:1864",
+    "reckon/ledger.py:3350"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T06:21:05Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-report-is-kept-only-when-persisted/a-report-is-kept-only-when-persisted-s10.html",
+      "line": 54,
+      "severity": "non-blocking",
+      "text": "The arm row says \"the three failures base has that head does not are this node's own test cases\", but the two logs differ by five ids: three node tests plus tests/test_staged_write_inventory.py::test_claim_move_aside_is_not_a_staged_write and ::test_every_staged_write_reaches_the_owner, so two unrelated base failures are silently attributed to the node."
+    },
+    {
+      "file": "tests/test_a_failed_close_composition_is_recorded.py",
+      "line": 265,
+      "severity": "non-blocking",
+      "text": "`assert _record_path(repo).is_file()` is satisfied by _write_frame, which pre-creates that exact path before _close runs, so the assertion holds whether or not the healthy composition wrote anything; the case's real evidence is the absent warning and the absent failure record."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261124T053023988163-a-report-is-kept-only-when-persisted-s10/gate-head.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The head gate log's revision header reads `e7e33584ac... (head, plus uncommitted node work)`, naming the base revision rather than head 67b204b8e9 the evidence fragment cites; the head commit is proven only by arm-head.log's header, so the done-when's requirement that the head gate log carry its revision is not strictly met."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read all three commits (67b204b8e9 fix, 74d8c09df4 and 7e0d94fb1f docs); the production change is a total catch, a durable JSON close-failure record, and a report_warnings channel to the MCP result.",
+    "done_when": "The done_when names tests/test_a_failed_close_composition_is_recorded.py with three cases plus base/head gate logs on all_debug; gate-head.log shows 3 passed at head and gate-base.log 3 failed at base, and arm-base.log/arm-head.log record the suite pair.",
+    "goal": "The node's goal is \u00a710: a failed report composition at plan close never leaves a half-written close; reckon/_store.py:1975-1987 catches every Exception, records the failure naming the plan and error, and warns, so the plan stays closed.",
+    "manifest": "Read; it states the gate passed 3 at head 67b204b8e9, failed at base, and the arms add zero failures, with gate-head.log, gate-base.log, arm-base.log and arm-head.log named.",
+    "write_paths": "Declared six paths; the delivered diff touches five, all inside them (fragment fragment, _store.py, evidence.py, mcp_edit_plan.py, the new test), with no plan, state or figure file."
+  },
+  "justifications": {
+    "durability": "The base arm reddens on the unexpected-error case, proving the guard fires, but tests/test_a_failed_close_composition_is_recorded.py:265 asserts a file _write_frame pre-creates, so it does not itself guard the healthy-composition case.",
+    "evidence": "The gate ran green at head (3 passed) and red at base (3 failed, RuntimeError escaping), and the arms add zero failures, but gate-head.log:1 records the base revision and the fragment at line 54 misstates the base-only failure count.",
+    "fit": "reckon/_store.py:1975 uses the repository's `# noqa: BLE001` idiom seen across reckon/crew/admission, and the added names carry no plan, stage or ticket label.",
+    "goal_fidelity": "reckon/_store.py:1975-1987 now catches every Exception from evidence.compose_closed_plan_report, writes a durable record, and appends the sentence to report_warnings, so the close stands while the failure is named.",
+    "reuse": "reckon/evidence.py:2094 reuses write_json_atomically and crew_home, and no existing module records a plan-close composition failure, so the new capability has no owner to extend.",
+    "scope_discipline": "Every one of the five paths in e7e33584ac..7e0d94fb1f lies inside the six declared write paths, and no plan, state or figure file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a710's deliverable is that a close whose composition fails for any reason keeps the close and leaves a record naming the plan and error; reckon/_store.py:1975-1987 catches every Exception, calls evidence.record_close_failure and warns, so it is met.\nVERDICT done_when: the done_when names tests/test_a_failed_close_composition_is_recorded.py and a base/head gate-log pair; gate-head.log records 3 passed at head and gate-base.log 3 failed at base with the RuntimeError escaping, and arm-base.log/arm-head.log record 24 failed/1668 passed and 19 failed/1673 passed with an empty head-minus-base id delta.\nVERDICT write_paths: the declared six paths include fragment s10, the figures directory, _store.py, evidence.py, mcp_edit_plan.py and the new test; the delivered five paths all lie inside them and nothing else is touched.\nVERDICT manifest: read; it reports the gate green at head 67b204b8e9 and red at base, the arms with zero added failures, and names all four gate and arm logs.\nVERDICT diff: read commit by commit against base e7e33584ac; 67b204b8e9 carries the fix, the test and the fragment, 74d8c09df4 and 7e0d94fb1f adjust the fragment's figures, and every path is inside scope.\nCALL_SITES: reckon/mcp_edit_plan.py:_edit_plan, reckon/_store.py:write_plan, reckon/_store.py:_write_state_locked, reckon/crew/promotion_scope.py:1864, reckon/ledger.py:3350\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store.py:1975-1987 catches every Exception, records the failure and warns while the close stands.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate and arm logs are recorded with EXIT lines, but gate-head.log:1 names the base revision and the fragment at line 54 overstates a three-id delta as three node-only failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in e7e33584ac..7e0d94fb1f is inside the declared write paths and no plan, state or figure file changed.\nSCORE durability: 17\nJUSTIFICATION durability: the base arm reddens on the unexpected-error case, but tests/test_a_failed_close_composition_is_recorded.py:265 asserts a file _write_frame pre-creates and so does not guard the healthy path.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_store.py:1975 uses the `# noqa: BLE001` idiom pervasive in reckon/crew/admission and names carry no plan or stage label.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/evidence.py:2094 reuses write_json_atomically and crew_home, and no existing module owns a close-composition failure record.\nFINDING docs/evidence/fragments/a-report-is-kept-only-when-persisted/a-report-is-kept-only-when-persisted-s10.html:54 non-blocking: the arm row claims the three base-only failures are the node's own tests, but there are five, two of them unrelated test_staged_write_inventory cases.\nFINDING tests/test_a_failed_close_composition_is_recorded.py:265 non-blocking: the is_file assertion is satisfied by the frame _write_frame pre-creates, so it does not show the healthy composition wrote its report.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261124T053023988163-a-report-is-kept-only-when-persisted-s10/gate-head.log:1 non-blocking: the head gate log's revision header names the base revision, not head 67b204b8e9, so it does not itself carry the head revision the done-when requires.\n",
+  "review_run_id": "r-20261124T062027807584-review-of-a-report-is-kept-only-when-persisted-s10-7e0d94fb1fe3",
+  "reviewed_base_sha": "e7e33584ac8d66c605db9755fe5407950a2d9043",
+  "reviewed_head_sha": "7e0d94fb1fe35dd3268e5fd1a59ada7b5dfbf121",
+  "reviewed_run_id": "r-20261124T053023988163-a-report-is-kept-only-when-persisted-s10",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T06:33:58.698722+00:00",
+  "total": 109
+}
