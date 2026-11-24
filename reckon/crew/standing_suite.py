@@ -213,7 +213,12 @@ def run_node_command(
     the project's environment there. No test is copied across revisions, and
     no caller supplies an output path. Exclusive creation reserves every log
     before submission; a missing job receipt remains an unreadable result.
+
+    ``partition`` may name a gate profile the project declares, in which case
+    the submission carries that profile's partition, reservation, gres, memory,
+    CPU count and default time.
     """
+    from reckon import flight
     from reckon.crew import landing_measure
     from reckon.crew.runs import read_pointer
 
@@ -229,6 +234,13 @@ def run_node_command(
         raise StandingSuiteError(f"run {run_id!r} records no manifest delivery path")
     directory = Path(manifest).expanduser().parent
     log = directory / f"{label}-{time.time_ns()}.log"
+    try:
+        config = flight.resolve(
+            str(pointer.get("project") or "") or None,
+            checkout_path=str(repository),
+        ).config
+    except (flight.FlightConfigError, OSError, ValueError):
+        config = {}
     runner = landing_measure._partition_runner(
         subprocess.run,
         repo=repository,
@@ -238,6 +250,7 @@ def run_node_command(
         partition=partition,
         long_partition="rigel",
         test_files=(),
+        config=config,
     )
     runner.partitioned = True
     arm = landing_measure._arm(
@@ -263,8 +276,11 @@ def run_node_command(
     observation["reason"] = arm.unreadable_reason or (
         f"exceeded the {timeout_seconds:g}s bound" if arm.timed_out else ""
     )
-    observation["partition"] = landing_measure.partition_for_bound(
-        partition, "rigel", timeout_seconds
+    profile = landing_measure.gate_profile(config, partition)
+    observation["partition"] = (
+        str(profile["partition"])
+        if profile is not None
+        else landing_measure.partition_for_bound(partition, "rigel", timeout_seconds)
     )
     return observation
 

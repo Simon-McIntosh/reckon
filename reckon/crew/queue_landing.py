@@ -1248,7 +1248,9 @@ def _measure_delivery(
         changed = landing_measure.delivered_paths(repo, base_sha, head)
         # Only the checkout is inside this except: an error raised by the
         # measurement itself is a different failure and is reported as one.
-        partitioned = landing_measure.measures_on_partition(config)
+        partitioned = landing_measure.measures_on_partition(config) or bool(
+            str(declared_partition or "").strip()
+        )
         with ExitStack() as stack:
             measured_head, measured_tree = head, Path(tree)
             if primary != head:

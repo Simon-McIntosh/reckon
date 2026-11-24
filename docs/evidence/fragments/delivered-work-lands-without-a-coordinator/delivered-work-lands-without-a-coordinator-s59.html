@@ -1,0 +1,105 @@
+<section id="delivered-work-lands-without-a-coordinator-s59-landing">
+  <h2>A project declares the scheduler profile its gate arms run under</h2>
+
+  <p><strong>What this measures.</strong> A gate that can only be measured on one
+  scheduler states that scheduler once, as a named profile under
+  <code>landing.gate_profiles</code> in the project's flight layer. The profile
+  names the partition, a reservation, a gres request, a memory, a CPU count and
+  a default time. Every submission a gate makes resolves the name it was given
+  against those profiles and carries the whole declaration: the job a
+  <code>crew declare-gate --partition &lt;profile&gt;</code> submits, the arms a
+  <code>crew suite run --partition &lt;profile&gt;</code> submits, both arms of
+  a landing measure for such a run, and the replayed gate at the integrated
+  revision. A name no profile carries is a bare partition and submits exactly
+  as it always did.</p>
+
+  <p><strong>The refusal is at load.</strong> A profile that declares no
+  memory, or a memory of zero, is refused while the flight layer is validated,
+  naming the profile: an absent or zero memory requests a whole node and pends
+  on Resources. A profile that names no CPU count keeps the shipped
+  population's, so omitting it does not silently run an arm one CPU at a
+  time.</p>
+
+  <p><strong>The job's own environment (see table).</strong> A profile's
+  submission keeps <code>TMPDIR</code> node-local and runs the project's
+  interpreter directly; nothing in the submitted step calls
+  <code>uv</code>.</p>
+
+  <table id="dwlw-s59-submission">
+    <thead><tr><th>submission</th><th>what carries the profile</th></tr></thead>
+    <tbody>
+      <tr><td><code>crew declare-gate --partition h200</code></td>
+        <td><code>landing_measure.measure_run</code> &rarr;
+        <code>partition_submission</code></td></tr>
+      <tr><td><code>crew suite run --partition h200</code></td>
+        <td><code>standing_suite.run_node_command</code> resolves the
+        project's config and passes it to the arm runner</td></tr>
+      <tr><td>a landing measure for such a run</td>
+        <td><code>queue_landing._measure_delivery</code> measures on the
+        declared partition even when the project's own measure partition is
+        unset</td></tr>
+      <tr><td>the replayed gate at the integrated revision
+        (<code>promotion_gate._rerun_gate_at_integrated_revision</code>)</td>
+        <td>the repository's resolved landing declaration</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Negative control.</strong> At the base
+  <code>bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae</code>, the node's first case
+  fails with the submission carrying the partition alone:
+  <code>AssertionError: assert 'h200' == 'betelgeuse'</code>. The profile name
+  reaches the scheduler as though it were a partition, which is exactly the
+  reading the change exists to replace.</p>
+
+  <p><strong>Measure.</strong> The importer population of the changed modules —
+  139 files plus the node's own test — was run on <code>all_debug</code> at
+  both revisions, each arm with <code>TMPDIR</code> on node-local memory so the
+  two readings share one scratch policy. At the base
+  <code>bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae</code> the population reports
+  <code>31 failed, 1438 passed, 9 skipped in 685.36s (0:11:25)</code>. At the
+  head <code>0087fa7291f217c762719d36318986eb0aad1701</code> it reports
+  <code>27 failed, 1447 passed, 9 skipped in 747.06s (0:12:27)</code>.</p>
+
+  <p><strong>No failure is added.</strong> Every id the head arm reports is one
+  the base arm reports too. Four ids the base arm reports pass at the head
+  (<code>tests/test_fleet_health_records_node_tmp.py</code>'s disk and sampler
+  rows, and <code>test_health_sampler_calls_scratch_sampling_and_keeps_the_reading</code>),
+  which are host-sampler readings rather than code this node touched. The
+  node's own test exists only at the head, is named in that arm's command, and
+  passes there.</p>
+
+  <p><strong>The scratch filesystem decides some of these ids, and the arms
+  were matched for it.</strong> Node-local <code>/tmp</code> on
+  <code>all_debug</code> exhausted twice while this node was measured (418
+  fixture errors creating pytest's own temporary directories, with the
+  measurement passes unaffected), and an arm with <code>TMPDIR</code> on
+  shared storage added 22 environment failures in the disk and store suites.
+  Those logs are kept beside the arm logs so a reader can see what produced
+  them; they are not the comparison above.</p>
+
+  <p><strong>The replay waits for the bound its job runs under.</strong> The
+  replayed gate at the integrated revision is submitted through the same
+  builder, so a profile raises that job's <code>--time</code> above the bound
+  the replay resolved. The client wait follows the job's bound rather than the
+  resolved one, and the cut-short message names the bound the job actually
+  had: waiting for the shorter figure killed a job the scheduler was still
+  running and reported the kill as the gate's own timeout, which is the one
+  gate a long GPU profile exists to run. At the revision before this, the same
+  case reports a 720 s client wait for a job permitted 14400 s.</p>
+
+  <p><strong>The repair's own arms.</strong> The suite carrying the node's
+  test, the staged-write inventory and the shared-home lock check was run over
+  the base revision's own tree and at the delivered head. At
+  <code>bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae</code> the two-file arm
+  reports <code>58 passed in 40.14s</code>; at
+  <code>08c2e244f30516dd1b6936421385ce79559ac49c</code> the three-file arm
+  reports <code>64 passed in 40.18s</code>, the six extra ids being the node's
+  own test file. No failure is added.</p>
+
+  <p><strong>What does not change.</strong> A bare partition name keeps the
+  shipped defaults — the population's CPU count, 32 GB and the bound the
+  measure computed — and carries no reservation or gres. A profile's default
+  time raises the arm's bound but never shortens a caller's longer one, and
+  the client wait is raised with it so the wait and the scheduler limit the
+  arm runs under agree.</p>
+</section>

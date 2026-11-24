@@ -1737,6 +1737,113 @@ def placement_scheduler_queries(
     return declared
 
 
+#: The keys a named gate profile accepts. A profile names the scheduler a
+#: gate's arms run on; ``partition`` names the partition itself and ``memory``
+#: is the one resource a profile must state, because a job submitting with no
+#: memory, or with ``--mem=0``, requests its whole node and pends on Resources.
+GATE_PROFILE_KEYS = ("partition", "reservation", "gres", "memory", "cpus", "time")
+
+_GATE_PROFILE_TIME_RE = re.compile(r"\d+:\d{2}(?::\d{2})?|\d+\s*[smh]", re.IGNORECASE)
+_GATE_PROFILE_MEMORY_RE = re.compile(r"\d+(?:\.\d+)?\s*[KMGT]?", re.IGNORECASE)
+
+
+def _gate_profile_memory_is_valid(value: Any) -> bool:
+    """Whether a profile's memory is a resource request the scheduler understands.
+
+    A number is a positive megabyte count. A string is a positive amount with an
+    optional ``K``/``M``/``G``/``T`` unit, as ``--mem`` accepts. Zero, a
+    non-positive figure and an empty string are all refused: ``--mem=0``
+    requests the whole node.
+    """
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, (int, float)):
+        return value > 0
+    if not isinstance(value, str):
+        return False
+    text = value.strip()
+    if not _GATE_PROFILE_MEMORY_RE.fullmatch(text):
+        return False
+    amount = re.match(r"\d+(?:\.\d+)?", text)
+    return bool(amount) and float(amount.group()) > 0
+
+
+def _gate_profile_time_is_valid(value: Any) -> bool:
+    """Whether a profile's default time is a duration the scheduler will take."""
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, (int, float)):
+        return value > 0
+    return isinstance(value, str) and bool(
+        _GATE_PROFILE_TIME_RE.fullmatch(value.strip())
+    )
+
+
+def _validate_gate_profiles(value: Any, source: str | Path) -> None:
+    """Validate a profile's shape, refusing a memory-less profile by name.
+
+    The refusal names the profile rather than only the key path, because the
+    profile a project declares is what a caller writes on ``--partition`` and a
+    message that omits it leaves the caller hunting for which of several
+    profiles is malformed.
+    """
+    if not isinstance(value, Mapping):
+        raise FlightConfigError(
+            source,
+            "landing.gate_profiles",
+            "must be a mapping of profile name to profile",
+        )
+    for name, profile in value.items():
+        key_path = f"landing.gate_profiles.{name}"
+        if not str(name).strip():
+            raise FlightConfigError(source, key_path, "must name a profile")
+        if not isinstance(profile, Mapping):
+            raise FlightConfigError(source, key_path, "must be a mapping")
+        for key in profile:
+            if key not in GATE_PROFILE_KEYS:
+                raise FlightConfigError(
+                    source, f"{key_path}.{key}", UNKNOWN_KEY_CONSTRAINT
+                )
+        partition = profile.get("partition")
+        if not isinstance(partition, str) or not re.fullmatch(
+            r"[A-Za-z0-9_-]+", partition
+        ):
+            raise FlightConfigError(
+                source, f"{key_path}.partition", "must name a profile's partition"
+            )
+        if not _gate_profile_memory_is_valid(profile.get("memory")):
+            raise FlightConfigError(
+                source,
+                f"{key_path}.memory",
+                f"gate profile {name!r} declares no positive memory; a profile "
+                "must state the memory its job requests, because an absent or "
+                "zero memory requests the whole node and pends on Resources",
+            )
+        reservation = profile.get("reservation")
+        if reservation is not None and (
+            not isinstance(reservation, str) or not reservation.strip()
+        ):
+            raise FlightConfigError(
+                source, f"{key_path}.reservation", "must name a reservation"
+            )
+        gres = profile.get("gres")
+        if gres is not None and (not isinstance(gres, str) or not gres.strip()):
+            raise FlightConfigError(source, f"{key_path}.gres", "must name a gres")
+        cpus = profile.get("cpus")
+        if cpus is not None and (
+            isinstance(cpus, bool) or not isinstance(cpus, int) or cpus <= 0
+        ):
+            raise FlightConfigError(
+                source, f"{key_path}.cpus", "must be a positive CPU count"
+            )
+        if "time" in profile and not _gate_profile_time_is_valid(profile.get("time")):
+            raise FlightConfigError(
+                source,
+                f"{key_path}.time",
+                "must be a duration: seconds, HH:MM:SS or an s/m/h suffix",
+            )
+
+
 def _validate_landing(data: Mapping[str, Any], source: str | Path) -> None:
     """Validate the scheduler settings owned by the landing service."""
     if "landing" not in data:
@@ -1760,6 +1867,8 @@ def _validate_landing(data: Mapping[str, Any], source: str | Path) -> None:
                 raise FlightConfigError(
                     source, f"landing.{key}", "must be positive and finite"
                 )
+        elif key == "gate_profiles":
+            _validate_gate_profiles(value, source)
         else:
             raise FlightConfigError(source, f"landing.{key}", UNKNOWN_KEY_CONSTRAINT)
 

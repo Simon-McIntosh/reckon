@@ -1229,6 +1229,86 @@ def time_limit_text(bound_seconds: float) -> str:
     return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
 
+def gate_profiles(config: Mapping[str, Any] | None) -> Mapping[str, Mapping[str, Any]]:
+    """The named gate profiles a project's flight layer declares.
+
+    A profile lives under ``landing.gate_profiles`` in the resolved config, keyed
+    by the name a caller writes on ``--partition``. An absent or malformed
+    section declares none, which is the shape every project had before the
+    section existed: a bare partition name keeps submitting exactly as before.
+    """
+    landing = (config or {}).get("landing")
+    if not isinstance(landing, Mapping):
+        return {}
+    profiles = landing.get("gate_profiles")
+    if not isinstance(profiles, Mapping):
+        return {}
+    return {
+        str(name): profile
+        for name, profile in profiles.items()
+        if isinstance(profile, Mapping)
+    }
+
+
+def gate_profile(
+    config: Mapping[str, Any] | None, name: str
+) -> Mapping[str, Any] | None:
+    """The gate profile ``name`` selects, or ``None`` when no profile carries it."""
+    return gate_profiles(config).get(str(name))
+
+
+def gate_profile_time_seconds(profile: Mapping[str, Any]) -> float | None:
+    """A profile's default time limit in seconds, or None when it declares none."""
+    return parse_gate_duration(profile.get("time"))
+
+
+def gate_bound_seconds(
+    config: Mapping[str, Any] | None, partition: str, bound_seconds: float
+) -> float:
+    """The bound a submission to ``partition`` actually executes under.
+
+    A profile's default time is the shortest bound its job may carry, so it
+    raises a caller's shorter bound and never shortens a longer one. A caller
+    that waits on the submission needs this figure rather than the one it
+    passed in: waiting for the shorter bound would kill a job the scheduler
+    was still running and read the kill as the gate's own timeout.
+    """
+    profile = gate_profile(config, partition)
+    if profile is not None:
+        profile_time = gate_profile_time_seconds(profile)
+        if profile_time is not None:
+            return max(float(bound_seconds), profile_time)
+    return float(bound_seconds)
+
+
+def _gate_profile_resource_options(profile: Mapping[str, Any]) -> list[str]:
+    """The scheduler resource options a profile's submission carries.
+
+    These are exactly the resources a profile can demand beyond its partition:
+    a reservation, a gres request, a CPU count and a reservation of memory.
+    ``memory`` is always present on a loaded profile, so the job always states
+    the memory it requests rather than falling back to the shipped default. A
+    profile that names no CPU count keeps the shipped population's, so a
+    profile that omits it does not silently run its arms one CPU at a time.
+    """
+    options: list[str] = []
+    reservation = str(profile.get("reservation") or "").strip()
+    if reservation:
+        options.append(f"--reservation={reservation}")
+    gres = str(profile.get("gres") or "").strip()
+    if gres:
+        options.append(f"--gres={gres}")
+    cpus = profile.get("cpus")
+    if cpus:
+        options.append(f"--cpus-per-task={int(cpus)}")
+    else:
+        options.append(f"--cpus-per-task={POPULATION_WORKERS}")
+    memory = profile.get("memory")
+    if memory is not None and str(memory).strip():
+        options.append(f"--mem={str(memory).strip()}")
+    return options
+
+
 def partition_submission(
     *,
     script: str,
@@ -1252,6 +1332,13 @@ def partition_submission(
     scheduler variables are removed so the job is not attached to whatever
     allocation the submission came from.
 
+    ``partition`` may name a gate profile the project's flight layer declares.
+    A profile fixes the partition, reservation, gres, memory, CPU count and a
+    default time, and every one of them is passed to the submission; its
+    default time raises the bound but never shortens a caller's longer one.
+    A name no profile carries is submitted exactly as a bare partition always
+    was.
+
     The selected partition is returned beside them, because a caller that
     reports where its measure ran needs the partition the bound chose rather
     than the one that was declared for short bounds.
@@ -1263,24 +1350,22 @@ def partition_submission(
         pass
     with Path(f"{log_path}.scheduler").open("x", encoding="utf-8"):
         pass
-    selected = partition_for_bound(partition, long_partition, bound_seconds, config)
+    profile = gate_profile(config, partition)
+    if profile is not None:
+        selected = str(profile["partition"])
+        bound_seconds = gate_bound_seconds(config, partition, bound_seconds)
+        resource_options = _gate_profile_resource_options(profile)
+    else:
+        selected = partition_for_bound(partition, long_partition, bound_seconds, config)
+        resource_options = [
+            f"--cpus-per-task={POPULATION_WORKERS}",
+            "--mem=32G",
+        ]
     bound = time_limit_text(bound_seconds)
-    step = (
-        shlex.join(
-            [
-                "srun",
-                f"--partition={selected}",
-                f"--time={bound}",
-                "--ntasks=1",
-                "bash",
-                "-c",
-                script,
-            ]
-        )
-        + " >> "
-        + shlex.quote(str(log_path))
-        + " 2>&1"
-    )
+    step_argv = ["srun", f"--partition={selected}", f"--time={bound}", "--ntasks=1"]
+    step_argv.extend(resource_options)
+    step_argv.extend(["bash", "-c", script])
+    step = shlex.join(step_argv) + " >> " + shlex.quote(str(log_path)) + " 2>&1"
     argv = [
         "sbatch",
         "--wait",
@@ -1290,8 +1375,7 @@ def partition_submission(
         f"--time={bound}",
         "--nodes=1",
         "--ntasks=1",
-        f"--cpus-per-task={POPULATION_WORKERS}",
-        "--mem=32G",
+        *resource_options,
         f"--output={log_path}.scheduler",
         f"--error={log_path}.scheduler",
         f"--chdir={chdir}",
@@ -1379,6 +1463,14 @@ def _partition_runner(
     def run(command, **options):
         revision = base_sha if Path(options["cwd"]) == base_tree else head_sha
         timeout = options["timeout"]
+        # A gate profile's default time is the shortest bound its job may carry.
+        # The submission's own ``--time`` is raised the same way below, so the
+        # client wait and the scheduler limit the arm runs under agree.
+        profile = gate_profile(config, partition)
+        if profile is not None:
+            profile_time = gate_profile_time_seconds(profile)
+            if profile_time is not None:
+                timeout = max(float(timeout), profile_time)
         log = Path(options.pop("arm_log_path")).absolute()
         scratch_id = hashlib.sha256(str(log).encode()).hexdigest()[:12]
         quote = shlex.quote

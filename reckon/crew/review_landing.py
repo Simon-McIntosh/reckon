@@ -104,6 +104,7 @@ def replay_candidate(
         partition=partition,
         long_partition=long_partition,
         test_files=(),
+        config=config,
     )
     runner.partitioned = True
     directory = runs.run_dir(run_id) / "review-landing"
