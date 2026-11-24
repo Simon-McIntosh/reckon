@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="220">
+<meta name="plan-version" content="221">
 <meta name="plan-modified" content="2026-11-24">
 </head>
 <body>
@@ -1085,6 +1085,9 @@
 </div>
 <div class="r-comment" data-section="s58" data-id="c-run-r-20261124T000445253265-review-of-delivered-work-lands-without-a-coordinator-s58-8084fea8d2e5" data-who="reckon-build" data-when="2026-11-24T00:27:47.102Z">
     <div class="r-comment-body"><p>Independent incremental review of run r-20261123T173032645834-delivered-work-lands-without-a-coordinator-s58 reading c7d3ad42e9746b297187bbd7c83ce42cd6a11d53..8084fea8d2e5e10c4a64f5ec4e30bba6a648c941 (the four commits gained since its review at c7d3ad42e9) against the run's whole bee04f7f..8084fea8 diff; status parsed with scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 19, zero added failures, and two non-blocking findings — the manifest cites gate job 1342495/node 98dci4-clu-3143 where every log names job 1342622/node 98dci4-clu-3141, and the logged negative control exercises the reuse mutation rather than the declared first-case control (which is asserted inline at tests/test_a_repointed_arm_records_its_completion.py:136-145); both records are stored outside the worktree at the two granted paths.</p></div>
+</div>
+<div class="r-comment" data-section="s58" data-id="c-run-r-20261123T173032645834-delivered-work-lands-without-a-coordinator-s58" data-who="reckon-build" data-when="2026-11-24T00:01:49Z">
+    <div class="r-comment-body"><p>crew repair --arm re-derives a re-pointed arm&#x27;s exit status, failure count, failure ids and completed from the log it is given, reading the terminal EXIT record through the one pattern the module already owns for it rather than a second pattern — a two-process log whose processes each report a summary under a closing EXIT=1 records completed true with the union of both processes&#x27; ids and a count equal to them, so the red-base merge it describes lands; a process that stopped before its summary leaves the arm incomplete and names that process; a single-process log records its own status and ids; a log the repair names that cannot be read is refused and the arm is untouched; the repaired arm satisfies the receipt check against the log it cites; and the module carries no second pattern for the record.</p></div>
 </div>
 <div class="r-comment" data-section="s59" data-id="c-run-r-20261123T232620054384-review-of-delivered-work-lands-without-a-coordinator-s59-fcafde86aed3" data-who="reckon-build" data-when="2026-11-23T23:35:06.089Z">
     <div class="r-comment-body"><p>review of r-20261123T173038342398-delivered-work-lands-without-a-coordinator-s59 at fcafde86aed3b85d6d4163132e014a85b6c48423 (base bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae) scored 16/18/18/13/17/18 with zero added failures and one blocking finding: promotion_gate.py:1368 does not raise the replay's sbatch client wait to a profile's default time</p></div>
