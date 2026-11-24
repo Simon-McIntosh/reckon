@@ -1270,6 +1270,15 @@ slots:
     range: integer
     minimum_value: 1
 
+  critical_priority:
+    description: >-
+      The priority override at or above which a request takes a freed slot
+      ahead of waiting reviews of delivered runs. Below this level a delivered
+      review still leads, because a finished run cannot land without it. The
+      runtime default is 100 when no layer sets this value.
+    range: integer
+    minimum_value: 1
+
   project_weights:
     description: >-
       Positive fair-use weight for each project sharing the local queue.
@@ -1385,6 +1394,7 @@ classes:
     slots:
       - max_requests
       - launch_failure_limit
+      - critical_priority
       - project_weights
       - repick_after_seconds
       - priority_budget

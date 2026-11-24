@@ -241,6 +241,14 @@ capability_raise:
 settle:
   quiet_after_hours: 6.0
 
+# A delivered run's review leads the lane, because the run cannot land without
+# it and the sections waiting on that run cannot launch. A request whose
+# priority override reaches this level is critical work and takes a freed slot
+# ahead of those reviews; below it the review still leads. Declared here so the
+# level is visible in the bottom layer, and a project layer retunes it.
+queue:
+  critical_priority: 100
+
 worktree:
   cleanup: conservative
   node_tmp_reserve_bytes: 8589934592

@@ -902,6 +902,22 @@ def _reviewed_request_runs(
         )
 
 
+def _request_config(request: Mapping[str, Any]) -> Mapping[str, Any]:
+    """The request's resolved project config, for its critical level.
+
+    The promotion order honours the same ``queue.critical_priority`` the
+    admission pass reads, so the level is resolved from the request's own
+    project rather than defaulted. A config that cannot be resolved falls back
+    to the shipped default rather than ending the ordering.
+    """
+    try:
+        from reckon.crew.queue_admission import _resolve_lane_config
+
+        return _resolve_lane_config(request, select_local=False)
+    except Exception:  # noqa: BLE001 - an unreadable config keeps the shipped level
+        return {}
+
+
 def _pending_requests(
     *,
     now: datetime | None = None,
@@ -961,6 +977,7 @@ def _pending_requests(
             is_review=lambda request: str(request.get("run_id") or "") in review_first,
             served=served,
             consumes_turn=lambda request: request.get("phase") == REQUESTED,
+            config_for=_request_config,
         )
     ]
 

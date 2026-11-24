@@ -21,3 +21,19 @@ def test_strict_resolution_of_the_shipped_defaults_succeeds(tmp_path: Path) -> N
         host_path=empty, project_path=empty, checkout_path=tmp_path, strict=True
     )
     assert resolved.config.get("settle", {}).get("quiet_after_hours") == 6.0
+
+
+def test_the_shipped_defaults_ship_the_critical_priority_level(tmp_path: Path) -> None:
+    """The critical level the ordering reads is declared in the bottom layer.
+
+    An undeclared key makes strict resolution refuse, so the level is asserted
+    from a strict resolution of the shipped defaults alone and read back through
+    the reader the ordering uses.
+    """
+    empty = tmp_path / "empty.yaml"
+    empty.write_text("{}\n", encoding="utf-8")
+    resolved = flight.resolve(
+        host_path=empty, project_path=empty, checkout_path=tmp_path, strict=True
+    )
+    assert resolved.config.get("queue", {}).get("critical_priority") == 100
+    assert flight.queue_critical_priority(resolved.config) == 100

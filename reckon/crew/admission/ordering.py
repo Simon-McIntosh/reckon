@@ -278,6 +278,7 @@ def priorities_first(
     order: Sequence[Mapping[str, Any]],
     *,
     now: datetime | None = None,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
 ) -> list[Mapping[str, Any]]:
     """Hoist explicitly reprioritised requests ahead of the rest of the lane.
 
@@ -315,6 +316,17 @@ def priorities_first(
             >= queue_order.STARVATION_AGE_SECONDS
         )
 
+    def _critical(pointer: Mapping[str, Any]) -> bool:
+        points = queue_order._override(pointer)
+        return points is not None and queue_order._critical_level(
+            pointer, config_for
+        ) <= (points or 0)
+
+    # Critical work is moved by the shared order itself, not by this hoist: a
+    # request at or above its project's critical level is placed ahead of a
+    # waiting review inside ``queue_order``, so this pass must leave it where
+    # that order put it. It is excluded from ``raised`` only so the hoist below
+    # cannot drag it back behind the reviews.
     raised = sorted(
         (
             pointer
@@ -322,17 +334,30 @@ def priorities_first(
             if queue_order._priority(pointer) > 0
             and not _is_review_run(pointer)
             and not _aged(pointer)
+            and not _critical(pointer)
         ),
         key=lambda pointer: -queue_order._priority(pointer),
     )
-    if not raised:
-        return list(order)
-    hoisted = {id(pointer) for pointer in raised}
-    rest = [pointer for pointer in order if id(pointer) not in hoisted]
-    lead = 0
-    while lead < len(rest) and (_is_review_run(rest[lead]) or _aged(rest[lead])):
-        lead += 1
-    return rest[:lead] + raised + rest[lead:]
+    if raised:
+        hoisted = {id(pointer) for pointer in raised}
+        rest = [pointer for pointer in order if id(pointer) not in hoisted]
+        lead = 0
+        while lead < len(rest) and (
+            _is_review_run(rest[lead]) or _aged(rest[lead]) or _critical(rest[lead])
+        ):
+            lead += 1
+        order = rest[:lead] + raised + rest[lead:]
+    # The role-share and weight passes run between the shared order and this
+    # one, so the critical lead is asserted once more over their result. The
+    # move is the shared order's own, applied again rather than reimplemented.
+    placements = queue_order._critical_ahead_of_reviews(
+        [(pointer, "") for pointer in order],
+        now=moment,
+        config_for=config_for,
+        is_review=_is_review_run,
+        stamp=lambda pointer: parse_utc(pointer.get("queued_at")),
+    )
+    return [pointer for pointer, _reason in placements]
 
 
 def fair_share_admission_order(
@@ -354,12 +379,13 @@ def fair_share_admission_order(
         queued,
         [pointer for pointer in live if pointer.get("phase") != HELD_PHASE],
         now=now,
+        config_for=config_for,
     )
     order = role_share_order(order)
     weights = _fair_use_weights(queued, config_for=config_for)
     if weights is not None:
         order = weighted_project_order(order, weights)
-    return priorities_first(order, now=now)
+    return priorities_first(order, now=now, config_for=config_for)
 
 
 def awaits_a_lane_slot(pointer: Mapping[str, Any]) -> bool:
@@ -433,6 +459,7 @@ def queued_placements(
         queued,
         [pointer for pointer in pointers if pointer.get("phase") != HELD_PHASE],
         now=moment,
+        config_for=config_for,
     )
     reasons = {str(pointer.get("run_id") or ""): reason for pointer, reason in details}
     weights = _fair_use_weights(queued, config_for=config_for)
@@ -440,7 +467,7 @@ def queued_placements(
     order = role_share_order(order)
     if weights is not None:
         order = weighted_project_order(order, weights)
-    order = priorities_first(order, now=moment)
+    order = priorities_first(order, now=moment, config_for=config_for)
     from reckon.crew.recovery_review_delivery import _is_review_run
 
     for position, pointer in enumerate(order, 1):
