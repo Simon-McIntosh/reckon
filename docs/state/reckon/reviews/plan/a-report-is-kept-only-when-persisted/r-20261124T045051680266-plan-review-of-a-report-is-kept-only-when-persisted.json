@@ -1,0 +1,84 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T05:05:03Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-report-is-kept-only-when-persisted.html:223",
+      "id": "reasoning-1",
+      "reason": "the section's single measurable claim admits two unifications with opposite outcomes for the upstream section's gate, and the node cannot tell which the plan intends.",
+      "text": "\u00a711's deliverable requires one figure directory \"the same in its manifest template and in its location sentence, for both carriers\" but names no directory, while \u00a77's done-when at line 196 requires the composed contract to \"name the topic directory\"; at `9096b78bef` the shared manifest template says `docs/figures/<plan>/` (prompts.py:1187) and the brief carrier's location sentence says `docs/figures/<topic>/` (prompts.py:355), so a node can satisfy \u00a711's agreement case by unifying the brief carrier on `<plan>` and break \u00a77's topic-directory case, or unify on `<topic>` while the manifest check still resolves figures elsewhere",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-report-is-kept-only-when-persisted.html:224",
+      "id": "done_when-1",
+      "reason": "the case is the only measure of the second deliverable, and as written it accepts any agreed path, so the defect it exists to remove (two directories, one unread by the consumer) can survive a green gate.",
+      "text": "the carrier case is \"every figure directory named in one composed prompt is the same path\", an internal-consistency assertion: at `9096b78bef` the plan carrier already names `docs/figures/<plan>/` in both its manifest template and its location sentence, so that carrier passes at base and the case cannot distinguish a correct unification from a self-consistent wrong one",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-report-is-kept-only-when-persisted.html:222",
+      "id": "anchors_resolve-1",
+      "reason": "the adjacent head sha `9096b78bef` resolves and identifies the same run, so the citation is followable, and appending the suffix changes no work.",
+      "text": "\u00a711 cites the re-review as `r-20261124T002326297129-review-of-a-report-is-kept-only-when-persisted`, but the run is `r-20261124T002326297129-review-of-a-report-is-kept-only-when-persisted-s7-9096b78befae` (under `crew/archive/runs/`), and no directory with the cited name exists; \u00a710 and the plan's own s7 comment carry the full id with its suffix",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "1aaabf3ba7638c5b284bc81e0a90697e6b91d92e",
+  "plan_fingerprint": "85d09248845ae99cd4df41689af6519069bee3dfbec8e318f14466a086c79f23",
+  "plan_slug": "a-report-is-kept-only-when-persisted",
+  "plan_version": 35,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "finding": "anchors_resolve-1",
+      "reason": "the adjacent head sha `9096b78bef` resolves and identifies the same run, so the citation is followable, and appending the suffix changes no work.",
+      "when": "2026-11-24T05:14:34.560012+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "reason": "the adjacent head sha `9096b78bef` resolves and identifies the same run, so the citation is followable, and appending the suffix changes no work.",
+      "when": "2026-11-24T05:14:34.560012+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-report-is-kept-only-when-persisted.v35.json",
+  "review_run_id": "r-20261124T045051680266-plan-review-of-a-report-is-kept-only-when-persisted",
+  "reviewed_blob_sha": "222ab08faaaa9a9744b3ff5f4ec7d0dd8d93d48e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the cited re-review run id resolves to no directory as written, though its head sha does resolve.",
+    "done_when": "a finding \u2014 \u00a711's carrier case asserts only that the directories agree with each other and never that they are the one \u00a77's gate requires, so it can pass on a unification that fails \u00a77.",
+    "evidence_paths": "pass \u2014 each arm's log sits under the run directory (`crew/runs/<run>/`), which survives the run and is the same durable location \u00a77, \u00a78, \u00a79 and \u00a710 already use; nothing is sent to a scratchpad or a node-local temp path.",
+    "naming": "pass \u2014 \u00a711 adds no symbol or file name carrying a plan label; the test module name `test_a_measure_in_any_form_asks_for_a_figure.py` states the mechanism, and no changelog prose reaches code (the section prose is plan text, where the \u00a7-labels belong).",
+    "reasoning": "a finding \u2014 the stated root cause matches its evidence (verified at `9096b78bef`), but the endpoint leaves under-determined which directory wins while \u00a77's own gate fixes a different one.",
+    "single_goal": "pass \u2014 both halves (measure classification, one figure directory) are textual defects in the same composed evidence rule, fixed in the same module and closed by the one named gate file, so one verdict covers them.",
+    "wiring": "pass \u2014 \u00a711 declares `s11 -> #s7`, which is the right edge: its negative control states \"at main after \u00a77 lands\", and `9096b78bef` is NOT an ancestor of HEAD, so \u00a77 really is the unlanded upstream its gate depends on; no `informs`/`gates` relationship is used anywhere in this plan, so nothing is missing."
+  },
+  "section_digests": {
+    "_document": "289d46e2864010afc24c44532320126f8e51d9bcec89b6c14556e3fa449da709",
+    "s1": "ee47fe5018715e3fb4b9e9312fa9f5edd9cb7704d33128b5fb7faff903354379",
+    "s10": "953d845dafa553e1f724807b4badf9e918feff8bd24b01f1be6fa99144f586e2",
+    "s11": "a48e55f0ae007044196b2f075f2c1ad39a41a9ad86520a90ab9b265cbf229bcf",
+    "s2": "9396d7300c138b3407fc2803876606122442333cef7e2724797bf8da6d1fe47c",
+    "s3": "c87823744a63909821eae7b0be527c1d07f3add90ec9aaaec1ed327978197387",
+    "s4": "0135c54654765e34c225b2005ed6c7260ffcd2724f3222ebf808142a3e452e49",
+    "s5": "ea0c5f9bc3e471e0925d285043420f83f16fd469b2f4c95e1f12610224366cef",
+    "s6": "6c471b14972a42e0101dac6f6557f756abdebee752fe914375756de57c03b742",
+    "s7": "038663d5d93759e7305e472f2bc3eba15c8afb4b27c9b27b5f1c48201758c8ff",
+    "s8": "2f83ef1d6d95623619a92a03b54e49558ccb9be404f7eefa8206c9180fdade49",
+    "s9": "f48cb23f1968981b30bcc5b2250e01a93b777cd3fdef279dd04dc3a8623710d4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T05:14:21.545615+00:00",
+  "total": null
+}
