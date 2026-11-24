@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="concurrent-edits-meet-at-the-merge">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-run-changes-any-file-in-its-repository#s1&quot;,&quot;a-run-changes-any-file-in-its-repository#s2&quot;],&quot;s5&quot;:[&quot;a-run-changes-any-file-in-its-repository#s1&quot;]}">
   <title>A run changes any file in its repository | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-modified" content="2026-11-24">
 </head>
 <body>
@@ -52,7 +52,7 @@
     <p><strong>Negative control.</strong> At the base revision, the first case fails on the build skill's instruction to give each node its write paths.</p>
 
     <h2 id="s4">§4 — Critical work can take a slot ahead of waiting reviews</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p>On 22 November 2026, once the lane allowance became binding, reviews of delivered runs waited for the same slots as new implement work. 39 delivered runs sat waiting for review while new sections took the slots that freed. A delivered run cannot land without its review, and the sections that wait on it cannot launch, so a review held behind new work stops the plan's forward work. The lead's direction: reviews of delivered runs go to the front of the queue by default, with room left for critical work.</p>
     <p>A delivered run's review already takes a freed slot ahead of implement work: the admission order keeps delivered reviews at the head of the lane, above every priority override. What the lead's direction still lacks is the room it leaves for critical work, because no override can reach ahead of a waiting review.</p>
     <p><strong>Deliverable.</strong> A request whose priority override is at or above the project's critical level is offered a freed slot ahead of waiting reviews of delivered runs. The critical level is the flight setting <code>queue.critical_priority</code>, default 100. Every other request keeps today's order, with delivered reviews first.</p>
@@ -94,7 +94,7 @@
     <div class="r-comment-body"><p>Review of r-20261122T213519079815-arcaf-reviews-take-slots-first at reviewed head 719e2bf02e (base a5d4eb38) stored as a parsed record scoring all six dimensions; two non-blocking findings, no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261122T213519079815-arcaf-reviews-take-slots-first" data-who="reckon-build" data-when="2026-11-24T05:03:25Z">
-    <div class="r-comment-body"><p>A request whose priority override reaches its project&#x27;s critical level (flight setting queue.critical_priority, default 100) takes a freed slot ahead of a waiting delivered review. The level is now a move over the shared order, not an urgency class: queue_order._critical_ahead_of_reviews places a critical request ahead of the first waiting review, after every request past the starvation age, and returns the queue unchanged when no review waits. admission_order_details and fair_queue_order_details apply the same move, so the two queues agree; starvation ageing and a review&#x27;s precedence over the run it reviews are unchanged. Scoped template gate exit 0, 59/66 passed; importing-test arms fail the same twelve base failures.</p></div>
+    <div class="r-comment-body"><p>A request whose priority override reaches its project's critical level (flight setting queue.critical_priority, default 100) takes a freed slot ahead of a waiting delivered review. The level is now a move over the shared order, not an urgency class: queue_order._critical_ahead_of_reviews places a critical request ahead of the first waiting review, after every request past the starvation age, and returns the queue unchanged when no review waits. admission_order_details and fair_queue_order_details apply the same move, so the two queues agree; starvation ageing and a review's precedence over the run it reviews are unchanged. Scoped template gate exit 0, 59/66 passed; importing-test arms fail the same twelve base failures.</p></div>
 </div>
 </section>
 </main>
