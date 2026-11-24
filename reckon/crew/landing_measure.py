@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import ast
 import contextlib
+import getpass
 import hashlib
 import io
 import json
@@ -112,6 +113,17 @@ _TIME_LIMIT_CANCEL = re.compile(
 #: printed id cannot be read. A step cancelled by the time limit is named by
 #: ``STEP <job>.<step>``, and the STEP id's integer part is the job.
 _SCHEDULER_JOB = re.compile(r"\b(?:JOB|STEP) (\d+)\b")
+
+#: The header a partitioned arm prints before it runs: the revision it is
+#: measuring, the node it was placed on and the tree it unpacked there. The
+#: node is what a sweep after the arm needs, because the lander cannot see a
+#: compute node's process table from where it runs.
+_ARM_HEADER = re.compile(
+    r"^# revision: (?P<revision>\S+)\n"
+    r"# host: (?P<host>\S+)\n"
+    r"# tree: (?P<tree>\S+)[ \t]*$",
+    re.MULTILINE,
+)
 
 #: The token an armed command carries in place of the node's own test files.
 _SCOPED_PLACEHOLDER = "{node_test_files}"
@@ -219,6 +231,17 @@ def submit_measurement(
 
     log = _unused_log_path(request_path.parent / "job.log")
     source = Path(__file__).resolve().parents[2]
+    landing = config.get("landing") or {}
+    selected = partition_for_bound(
+        str(landing.get("measure_partition") or "all_debug"),
+        str(landing.get("measure_long_partition") or "rigel"),
+        bound,
+        config,
+    )
+    # The job that drives the measurement is itself a landing tree on the node
+    # it lands on, so it first sweeps the trees an earlier job there left.
+    limit = partition_max_seconds(selected, config)
+    sweep = f"{arm_sweep_command(limit, source)} || true" if limit else ""
     invocation = shlex.join(
         [
             sys.executable,
@@ -239,9 +262,9 @@ scratch=$(mktemp -d "$TMPDIR/$USER-landing-job-XXXXXX")
 trap 'exit 143' TERM INT
 export TMPDIR="$scratch" RECKON_WORKER_SCRATCH_ROOT="$scratch"
 export PYTHONPATH={shlex.quote(str(source))}
+{sweep}
 {invocation}
 """
-    landing = config.get("landing") or {}
     selected, argv, environment = partition_submission(
         script=script,
         partition=str(landing.get("measure_partition") or "all_debug"),
@@ -1303,6 +1326,77 @@ def _carry_line(git: str, relative: str, revision: str) -> str:
     )
 
 
+def _arm_host(arm_log: str) -> str:
+    """The node the arm's own header names, or ``""`` when it printed none."""
+    match = _ARM_HEADER.search(arm_log or "")
+    return match.group("host") if match else ""
+
+
+def _submit_delayed_sweep(
+    host: str,
+    *,
+    limit_seconds: float,
+    partition: str,
+    source: Path,
+    log_path: Path,
+    runner,
+    env: Mapping[str, str],
+) -> str:
+    """Send a sweep to an arm's node, to run once a leftover tree is old.
+
+    A sweep submitted now would find the tree younger than the partition's
+    limit and keep it, so the job is scheduled to begin when the limit has
+    passed: at that moment a tree no live job holds is by definition one the
+    scheduler ended. This is what reaches a node the lander places no further
+    arm on, which is the case the arm's own startup sweep cannot cover.
+
+    The sweep is bookkeeping, never evidence, so a refusal to submit is
+    recorded on the arm's log and never raises.
+    """
+    minutes = max(1, math.ceil(limit_seconds / 60))
+    sweep_log = log_path.parent / f"{log_path.stem}-arm-sweep.log"
+    argv = [
+        "sbatch",
+        "--parsable",
+        f"--partition={partition}",
+        f"--nodelist={host}",
+        "--time=00:15:00",
+        f"--begin=now+{minutes}",
+        "--nodes=1",
+        "--ntasks=1",
+        "--job-name=landing-arm-sweep",
+        f"--output={sweep_log}",
+        f"--error={sweep_log}",
+        "--wrap",
+        arm_sweep_command(limit_seconds, source),
+    ]
+    try:
+        finished = runner(
+            argv,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+            env=dict(env),
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        with log_path.open("a") as stream:
+            stream.write(f"arm sweep on {host} not submitted: {exc}\n")
+        return ""
+    if finished.returncode:
+        with log_path.open("a") as stream:
+            stream.write(
+                f"arm sweep on {host} not submitted: "
+                f"{(finished.stderr or finished.stdout or '').strip()}\n"
+            )
+        return ""
+    job_id = (finished.stdout or "").strip().splitlines()
+    named = job_id[0].split(";")[0] if job_id else ""
+    with log_path.open("a") as stream:
+        stream.write(f"arm sweep on {host} scheduled as job {named}\n")
+    return named
+
+
 def _partition_runner(
     runner,
     *,
@@ -1331,6 +1425,7 @@ def _partition_runner(
 
     environment = resolved_environment(repo)
     carried = tuple(test_files)
+    source = Path(__file__).resolve().parents[2]
 
     def run(command, **options):
         revision = base_sha if Path(options["cwd"]) == base_tree else head_sha
@@ -1344,10 +1439,22 @@ def _partition_runner(
         invocation = shlex.join(
             ["env", *[f"{k}={v}" for k, v in assignments.items()], *command]
         )
+        # The limit is the one this arm's own bound selects, so a tree older
+        # than it cannot belong to a live job on the node.
+        selected_partition = partition_for_bound(
+            partition, long_partition, timeout, config
+        )
+        selected_limit = partition_max_seconds(selected_partition, config)
+        sweep = (
+            f"{arm_sweep_command(selected_limit, source)} || true"
+            if selected_limit
+            else ""
+        )
         script = f"""set -euo pipefail
 scratch=
 trap 'status=$?; if [ -n "$scratch" ]; then rm -rvf "$scratch"; fi; printf "EXIT=%s\n" "$status"' EXIT
 export TMPDIR={NODE_LOCAL_TEMP_ROOT}
+{sweep}
 scratch=$(mktemp -d "{NODE_LOCAL_TEMP_ROOT}/$USER-landing-{scratch_id}-XXXXXX")
 # A scheduler that ends the job by signal still releases the tree: the TERM
 # handler exits, which is what runs the EXIT trap above.
@@ -1369,7 +1476,7 @@ set +e
 status=$?
 exit "$status"
 """
-        _selected, argv, env = partition_submission(
+        arm_selected, argv, env = partition_submission(
             script=script,
             partition=partition,
             long_partition=long_partition,
@@ -1449,6 +1556,22 @@ exit "$status"
             and not job_id
             and not output.strip()
         )
+        # An arm whose trap never ran may have left its tree on the node. The
+        # sweep that removes it has to run on that node, and the lander cannot
+        # read it from here, so one is sent to the node the arm named, to begin
+        # once the partition's limit has passed.
+        if selected_limit and not submission_failed and (timed_out or not receipts):
+            arm_host = _arm_host(output)
+            if arm_host:
+                _submit_delayed_sweep(
+                    arm_host,
+                    limit_seconds=selected_limit,
+                    partition=arm_selected,
+                    source=source,
+                    log_path=log,
+                    runner=runner,
+                    env=env,
+                )
         status = (
             int(receipts[-1])
             if receipts and not timed_out and not submission_failed
@@ -2280,6 +2403,169 @@ def sweep_abandoned_base_trees(root: Path | None = None) -> list[dict[str, Any]]
             flush=True,
         )
     return removed
+
+
+#: The infix every landing tree carries under the node's own tmp. A partitioned
+#: arm unpacks ``/tmp/<user>-landing-<id>-XXXXXX`` and the job wrapper that
+#: drives a whole measurement opens ``/tmp/<user>-landing-job-XXXXXX``; both
+#: belong to the landing and both are named with this token.
+ARM_TREE_INFIX = "-landing-"
+
+#: The environment variable that overrides the directory a partition's arms
+#: unpack under. It defaults to the node's own tmp, pinned rather than taken
+#: from ``TMPDIR`` for the same reason the worker scratch root is: a shared
+#: ``TMPDIR`` would put a measurement tree on GPFS.
+ARM_TREE_ROOT_ENV = "RECKON_ARM_TREE_ROOT"
+
+
+def arm_tree_prefix(user: str | None = None) -> str:
+    """The name prefix every landing tree carries on the node that built it.
+
+    The arm's script names its tree with ``$USER``, so the environment's own
+    ``USER`` is read first; a process whose environment omits it falls back to
+    the account's login name.
+    """
+    name = user or os.environ.get("USER") or getpass.getuser()
+    return f"{name}{ARM_TREE_INFIX}"
+
+
+def arm_tree_root() -> Path:
+    """The node-local directory a partitioned arm unpacks its tree under."""
+    override = os.environ.get(ARM_TREE_ROOT_ENV)
+    return Path(override) if override else Path(NODE_LOCAL_TEMP_ROOT)
+
+
+def local_node_name() -> str:
+    """The node a sweep is reporting its removals against."""
+    return os.uname().nodename.split(".", 1)[0]
+
+
+def sweep_stale_arm_trees(
+    root: Path | str | None = None,
+    *,
+    limit_seconds: float,
+    node: str = "",
+    now: float | None = None,
+    user: str | None = None,
+) -> list[dict[str, Any]]:
+    """Remove a landing arm's trees that outlived the job that built them.
+
+    A partitioned arm releases its tree on every exit its own script reaches.
+    A job the scheduler ends at its time limit, or kills outright, never runs
+    that release, so the tree it unpacked sits under the node's own tmp with
+    nothing to remove it later. This is the sweep that closes that gap.
+
+    The rule is the partition's own time limit, because the lander cannot read
+    a compute node's process table from where it runs: a tree whose last
+    activity is older than the longest a job there may run cannot belong to a
+    live job, because the scheduler would already have ended one holding it.
+    A tree a live process still holds is kept as well, read from the process
+    table when the sweep runs on the tree's own node, so a concurrent arm's
+    tree is never touched even when it has been in place a long time.
+
+    Only this account's trees are considered. Each removal is returned as a
+    record carrying the node, the tree's path and the bytes it held, so a
+    caller can account for the space the sweep reclaimed; the same fields are
+    printed so a job log carries them even when the caller discards the return.
+    """
+    if limit_seconds <= 0:
+        return []
+    directory = Path(root) if root is not None else arm_tree_root()
+    if not directory.is_dir():
+        return []
+    prefix = arm_tree_prefix(user)
+    stamp = time.time() if now is None else float(now)
+    node_name = node or local_node_name()
+
+    try:
+        candidates = [
+            child
+            for child in sorted(directory.iterdir())
+            if child.is_dir()
+            and not child.is_symlink()
+            and child.name.startswith(prefix)
+        ]
+    except OSError:
+        return []
+    if not candidates:
+        return []
+
+    # Imported here rather than at module load: the sweep shares the process
+    # table reader the orphan sweep uses, and gc reaches back into crew modules
+    # that import this one.
+    from reckon.crew.dispatch import tree_size_bytes
+    from reckon.crew.gc import _scratch_process_holders
+
+    holders = _scratch_process_holders(directory)
+    removed: list[dict[str, Any]] = []
+    for child in candidates:
+        if holders.get(child.name):
+            continue
+        try:
+            age = stamp - child.stat().st_mtime
+        except OSError:
+            continue
+        if age < limit_seconds:
+            continue
+        try:
+            size = tree_size_bytes(child)
+        except OSError:
+            size = 0
+        shutil.rmtree(child, ignore_errors=True)
+        if child.exists():
+            continue
+        record = {
+            "node": node_name,
+            "path": str(child),
+            "bytes": size,
+            "age_seconds": int(age),
+        }
+        removed.append(record)
+        print(
+            f"landing-arm sweep on {node_name}: removed {child} "
+            f"({size} bytes, {int(age)}s old)",
+            file=sys.stderr,
+            flush=True,
+        )
+    return removed
+
+
+def sweep_this_node_arm_trees(
+    partition: str, config: Mapping[str, Any] | None = None
+) -> list[dict[str, Any]]:
+    """Sweep the arm trees a previous job left on the node this runs on.
+
+    An unbounded partition has no age after which a tree cannot belong to a
+    live job, so it licenses no removal and the sweep does nothing for it.
+    """
+    limit = partition_max_seconds(partition, config)
+    if limit is None:
+        return []
+    return sweep_stale_arm_trees(limit_seconds=limit, node=local_node_name())
+
+
+def sweep_arm_trees_entry(limit: str, node: str) -> None:
+    """The sweep entry point a landing job runs on its own node."""
+    sweep_stale_arm_trees(limit_seconds=float(limit), node=node)
+
+
+def arm_sweep_command(limit_seconds: float, source: str | Path) -> str:
+    """The shell step a job runs to sweep stale trees on the node it lands on."""
+    call = (
+        "import sys; "
+        "from reckon.crew.landing_measure import sweep_arm_trees_entry as sweep; "
+        "sweep(sys.argv[1], sys.argv[2])"
+    )
+    return " ".join(
+        [
+            "PYTHONPATH=" + shlex.quote(str(source)),
+            shlex.quote(sys.executable),
+            "-c",
+            shlex.quote(call),
+            shlex.quote(f"{float(limit_seconds):g}"),
+            '"$(hostname)"',
+        ]
+    )
 
 
 @contextlib.contextmanager
