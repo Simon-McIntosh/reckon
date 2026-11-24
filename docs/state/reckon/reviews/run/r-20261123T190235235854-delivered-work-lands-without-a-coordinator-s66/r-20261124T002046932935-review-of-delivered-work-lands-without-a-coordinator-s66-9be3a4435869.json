@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:4843 crew_record_merge",
+    "reckon/crew_dispatch_commands.py:90 crew group (record-merge registration)"
+  ],
+  "call_sites_emission": "sites",
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T00:22:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": 5132,
+      "severity": "non-blocking",
+      "text": "the aggregate-held-row branch of _write_corrected_row is exercised by none of the four delivered cases, which each seed a per-run file through ledger.run_path, so the correction path for a row the aggregate still carries has no test asserting it writes and reads back corrected."
+    },
+    {
+      "file": "tests/test_a_recorded_merge_corrects_a_wrong_citation.py",
+      "line": 160,
+      "severity": "non-blocking",
+      "text": "the recorded_merge assertions at :160, :164, :169 and :199 compare the command's output to the same run[\"merge\"] the test hands in via --merge, so they echo their own input and hold for any value the code stores; the load-bearing citation check at :161 does read an independently captured head."
+    },
+    {
+      "file": "docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s66.html",
+      "line": 47,
+      "severity": "non-blocking",
+      "text": "the done_when names a base arm run on all_debug, but both delivered arms ran on rigel after the all_debug pair was discarded for a full /tmp, so the literal partition the measure names was not used although the base/head delta itself is sound."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified the changed production code against the CLI entry points that reach it: reckon/crew_run_commands.py:4843 crew_record_merge, registered by the crew group at reckon/crew_dispatch_commands.py:90; no internal caller invokes the verb.",
+    "diff": "read commit 1d98180fc9 (the correction and its test) and 9be3a44358 (the evidence fragment) against base d7f54a14d1; every path is inside the declared scope.",
+    "done_when": "\u00a766's done_when names tests/test_a_recorded_merge_corrects_a_wrong_citation.py covering four cases; the manifest records the head population at 16 failed/535 passed with the node's four cases absent from it, and gate-head.log carries the revision, literal command and a closing EXIT=1.",
+    "goal": "the node's goal is to let `crew record-merge` correct a stored ledger row that cites the wrong commit; reckon/crew_run_commands.py:4990 _correct_a_cited_head reads the head from the merge's second parent and :5076 rewrites the row's commits and promoted revision, keeping the replaced citation.",
+    "manifest": "read; status complete, commits 1d98180fc9 and 9be3a44358, changed_paths the three files, baseline arm 20 failed and head arm 16 failed with the delta recorded, and outside_scope records the discarded all_debug pair.",
+    "write_paths": "the declared scope is reckon/crew_run_commands.py, the one test file, the evidence fragment and a figures directory; the delivered diff touches the first three and no figures directory."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows all four cases failing at base d7f54a14d1 on the recorded refusal, so reinstating that refusal reddens tests/test_a_recorded_merge_corrects_a_wrong_citation.py:156.",
+    "evidence": "gate-head.log and gate-base.log each carry revision, literal command and a closing EXIT= line and the head adds 0 failure ids, but both arms ran on rigel while the done_when names all_debug.",
+    "fit": "reckon/crew_run_commands.py:5112 follows the module's helper idiom and introduces no plan, stage or ticket label, and the commit carries a conventional subject and a body.",
+    "goal_fidelity": "reckon/crew_run_commands.py:5112 reads the head from the merge's second parent and rewrites commits and promoted_revision while keeping citation_superseded, and :5058 leaves a row already citing the head byte-identical.",
+    "reuse": "the correction reuses ledger.write_run_file, ledger.write and _commit_landing_writes at reckon/crew_run_commands.py:5129-5140, though its file-or-aggregate decision restates the capability ledger._persist_repaired_rows already holds at reckon/ledger.py:4805.",
+    "scope_discipline": "the diff touches only reckon/crew_run_commands.py, tests/test_a_recorded_merge_corrects_a_wrong_citation.py and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to let `crew record-merge` correct a stored ledger row that cites the wrong commit; reckon/crew_run_commands.py:4990 `_correct_a_cited_head` reads the head from the merge's second parent and :5076 rewrites the row's commits and promoted revision, keeping the replaced citation.\nVERDICT done_when: \u00a766's done_when names tests/test_a_recorded_merge_corrects_a_wrong_citation.py covering four cases; the manifest records the head population at 16 failed/535 passed with the node's four cases absent from it, and gate-head.log carries the revision, literal command and a closing EXIT=1.\nVERDICT write_paths: the declared scope is reckon/crew_run_commands.py, the one test file, the evidence fragment and a figures directory; the delivered diff touches the first three and no figures directory.\nVERDICT manifest: read; status complete, commits 1d98180fc9 and 9be3a44358, changed_paths the three files, baseline arm 20 failed and head arm 16 failed with the delta recorded, and outside_scope records the discarded all_debug pair.\nVERDICT diff: read commit 1d98180fc9 (the correction and its test) and 9be3a44358 (the evidence fragment) against base d7f54a14d1; every path is inside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:4843 crew_record_merge, reckon/crew_dispatch_commands.py:90 crew group (record-merge registration)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:5112 reads the head from the merge's second parent and rewrites commits and promoted_revision while keeping citation_superseded, and :5058 leaves a row already citing the head byte-identical.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head.log and gate-base.log each carry revision, literal command and a closing EXIT= line and the head adds 0 failure ids, but both arms ran on rigel while the done_when names all_debug.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew_run_commands.py, tests/test_a_recorded_merge_corrects_a_wrong_citation.py and the evidence fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log shows all four cases failing at base d7f54a14d1 on the recorded refusal, so reinstating that refusal reddens tests/test_a_recorded_merge_corrects_a_wrong_citation.py:156.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew_run_commands.py:5112 follows the module's helper idiom and introduces no plan, stage or ticket label, and the commit carries a conventional subject and a body.\nSCORE reuse: 17\nJUSTIFICATION reuse: the correction reuses ledger.write_run_file, ledger.write and _commit_landing_writes at reckon/crew_run_commands.py:5129-5140, though its file-or-aggregate decision restates the capability ledger._persist_repaired_rows already holds at reckon/ledger.py:4805.\nFINDING reckon/crew_run_commands.py:5132 non-blocking: the aggregate-held-row branch of _write_corrected_row is exercised by none of the four delivered cases, which each seed a per-run file through ledger.run_path, so the correction path for a row the aggregate still carries has no test asserting it writes and reads back corrected.\nFINDING tests/test_a_recorded_merge_corrects_a_wrong_citation.py:160 non-blocking: the recorded_merge assertions at :160, :164, :169 and :199 compare the command's output to the same run[\"merge\"] the test hands in via --merge, so they echo their own input and hold for any value the code stores; the load-bearing citation check at :161 does read an independently captured head.\nFINDING docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s66.html:47 non-blocking: the done_when names a base arm run on all_debug, but both delivered arms ran on rigel after the all_debug pair was discarded for a full /tmp, so the literal partition the measure names was not used although the base/head delta itself is sound.",
+  "review_run_id": "r-20261124T002046932935-review-of-delivered-work-lands-without-a-coordinator-s66-9be3a4435869",
+  "reviewed_base_sha": "d7f54a14d1dcf7ae8054acd61fbf1a2e20d0425e",
+  "reviewed_head_sha": "9be3a443586949f5a8db7ffe82d9b3af648d33cd",
+  "reviewed_run_id": "r-20261123T190235235854-delivered-work-lands-without-a-coordinator-s66",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T01:40:00.000000+00:00",
+  "total": 108
+}
