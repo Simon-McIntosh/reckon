@@ -1,0 +1,68 @@
+<article class="r-evidence" data-node="delivered-work-lands-without-a-coordinator-s58" id="delivered-work-lands-without-a-coordinator-s58">
+<h3>A re-pointed arm records the completion its new log shows</h3>
+<p>On 23 November a hand merge was refused under the red-base rule although the
+gate had been measured and the lead had approved it. The worker's manifest
+recorded both arms as not completed, and <code>crew repair --arm</code>
+re-pointed each arm's revision, command and log without touching the exit
+status, the failure ids or the <code>completed</code> key. The red-base rule
+reads that key literally on each arm and reads the head ids from the log the
+gate cites, so the re-pointed arms could never admit the merge they described.</p>
+<p>The repair now reads the log it is given and records what that log says. A
+gate log that runs several test processes closes each with a
+<code># ---- process exit N rc=&lt;n&gt;</code> header, and the text between two
+headers is one process's output. The arm is complete when every process reports
+its own summary and the log's terminal <code>EXIT=&lt;n&gt;</code> record agrees
+with the children; its failure ids are the union of the processes' ids. A
+process that stopped before its summary states no result, so the arm is left
+incomplete and the process is named on the arm, which keeps a killed or
+abandoned test from reading as a clean one. A log with a single process takes
+its own terminal status and ids. The derived fields travel through the manifest
+reader, so a later reader sees the same completion and the same named process.</p>
+<p>Measure: <code>tests/test_a_repointed_arm_records_its_completion.py</code>
+passes seven of seven, covering the two-process log (completed, union of ids, and a
+red-base merge whose head adds no id then landing), the stopped process
+(incomplete, named), the single-process log (exit 2 and its own id), a log the
+repair was told to read but cannot, and the same re-point through
+<code>crew repair</code>. The base arm over the test files importing the
+changed modules ran at <code>bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae</code>
+and gave 164 passed with <code>EXIT=0</code> on
+<code>all_debug</code>. The head arm ran at
+<code>9806f9da8c7844b64329cbabec06fe02934eb9b8</code> and gave
+169 passed with <code>EXIT=0</code>, the five added cases
+and no added failure id. Negative control: with the same delivered test copied
+into a base-revision tree, the first case failed with
+<code>EXIT=1</code>, because the base repair
+leaves the arm's completion as the worker declared it and the red-base rule
+refuses the merge.</p>
+<p>The review found the repair still left one figure behind: it rewrote the exit
+status, the failure ids and the completion, but the arm's
+<code>failure_count</code> kept the value the worker declared, so the receipt
+check compared that old count with the figures of the very log the arm now
+cites and refused it. The count is now derived with the ids, the same equation
+the manifest schema holds every arm to, and a repair whose log cannot be read
+still leaves the count untouched. The case is pinned by a sixth test, which
+first reproduces the refusal against an arm that cites the log but still
+carries the previous run's count and then passes once the repair has rewritten
+it — the same case fails at the head with the answering commit reverted.</p>
+<p>A further review found the repair read the log's terminal
+<code>EXIT=&lt;n&gt;</code> record through a second pattern, beside the one the
+module already uses to cut a log at its last run. Two patterns for one notation
+can pick different lines, so the module's own pattern now captures the status
+and both readers take the figure from it; the case that pins this fails as soon
+as the second pattern is put back.</p>
+<p>Measure after the repair: base arm at
+<code>bee04f7fb92b66ebdd1f107eeb8cbc466a98b5ae</code> gave
+<code>58 passed in 40.32s</code> with <code>EXIT=0</code>; head arm at
+<code>95093fa3c45dca2f810a970b031b433e9bd325a7</code> gave
+<code>65 passed in 41.24s</code> with <code>EXIT=0</code>, the node's seven
+cases and no added failure; the importer population the done-when names — every
+test file importing the changed modules — gave
+<code>171 passed in 6.24s</code> with <code>EXIT=0</code> at that head; and the
+negative control, the head tree with the single-reader commit reverted, gave
+<code>1 failed, 6 deselected in 4.26s</code> with <code>EXIT=1</code>. Each log
+opens with the revision it ran at, the tree and the command, then names the
+partition, Slurm job and node that produced it (<code>all_debug</code>, one job
+id shared by the four), and the base arm ran in a base-revision tree whose git
+objects are linked to the repository, so the staged-write inventory test reads
+the tracked tree it expects.</p>
+</article>

@@ -365,9 +365,7 @@ def node_definition(record: Mapping[str, Any]) -> dict[str, Any]:
     return node
 
 
-def node_field(
-    record: Mapping[str, Any], name: str, default: Any = None
-) -> Any:
+def node_field(record: Mapping[str, Any], name: str, default: Any = None) -> Any:
     """One node-definition value for a run, whatever shape its pointer has."""
     if name not in NODE_BODY_FIELDS:
         raise CrewError(f"{name!r} is not part of a node's stored body")
@@ -3503,15 +3501,24 @@ def repair_manifest_status(run_id: str, status: str, reason: str) -> dict[str, A
 
 
 def _arm_line_replaced(
-    text: str, arm: str, revision: str, *, command: str = "", log_path: str = ""
+    text: str,
+    arm: str,
+    revision: str,
+    *,
+    command: str = "",
+    log_path: str = "",
+    observation: Mapping[str, Any] | None = None,
 ) -> tuple[str | None, str]:
     """Rewrite the first top-level arm line's revision, or None when absent.
 
     Only a line starting at column zero counts, so an arm nested under some
     other field is never the manifest's own. The arm's other fields are carried
-    over as the worker recorded them: re-pointing a ``numstat`` at the revision
-    the command actually ran against says nothing about the exit status, the
-    failure ids or the log that arm reported.
+    over as the worker recorded them, and an observation re-derived from the
+    log replaces the exit status, failure count, failure ids and completion the
+    arm declared: those are what the red-base rule and the receipt check read,
+    so a re-point that left them would keep declaring a result the log no
+    longer describes. The count is the number of ids the log yields, which is
+    the same equation the manifest schema holds every arm to.
     """
     prefix = f"{arm}:"
     lines = text.splitlines()
@@ -3525,12 +3532,50 @@ def _arm_line_replaced(
             record["command"] = command.strip()
         if log_path.strip():
             record["log_path"] = log_path.strip()
+        if observation is not None:
+            record["exit_status"] = observation["exit_status"]
+            record["failure_ids"] = list(observation["failure_ids"])
+            record["failure_count"] = len(record["failure_ids"])
+            record["completed"] = bool(observation["completed"])
+            if observation.get("incomplete_processes"):
+                record["incomplete_processes"] = list(
+                    observation["incomplete_processes"]
+                )
+            else:
+                record.pop("incomplete_processes", None)
         lines[index] = f"{arm}: {json.dumps(record)}"
         replaced = "\n".join(lines)
         if text.endswith("\n"):
             replaced += "\n"
         return replaced, previous
     return None, ""
+
+
+def _recorded_arm_fields(text: str, arm: str) -> dict[str, Any]:
+    """The fields the manifest's top-level line for ``arm`` records.
+
+    A repair reads the arm before rewriting it, so the log it names can be the
+    one the worker recorded when the repair does not name another.
+    """
+    prefix = f"{arm}:"
+    for line in text.splitlines():
+        if line.startswith(prefix):
+            return _recorded_arm(line.split(":", 1)[1].strip())
+    return {}
+
+
+def _arm_log_path(value: str, manifest: Path) -> tuple[Path | None, bool]:
+    """The file a recorded log path names, and whether it could be read.
+
+    A worker commonly writes the path relative to the manifest it delivered, so
+    an unresolvable value is tried beside the manifest before it is reported.
+    """
+    if not value:
+        return None, False
+    candidate = Path(value).expanduser()
+    if not candidate.is_absolute():
+        candidate = manifest.parent / candidate
+    return candidate, candidate.is_file()
 
 
 def _recorded_arm(value: str) -> dict[str, Any]:
@@ -3551,6 +3596,58 @@ def _recorded_arm(value: str) -> dict[str, Any]:
         except yaml.YAMLError:
             parsed = None
     return dict(parsed) if isinstance(parsed, Mapping) else {}
+
+
+def _arm_log_observation(
+    manifest_text: str,
+    arm: str,
+    manifest: Path,
+    *,
+    log_path: str = "",
+    run_id: str = "",
+) -> dict[str, Any] | None:
+    """The arm's measurement, re-derived from the log it points at.
+
+    The log the repair names wins over the one the arm recorded, because a
+    repair that supplies a log is correcting the arm's citation. A log the
+    repair names that cannot be read is a refusal: the coordinator asked for a
+    measurement and the repair must not report the arm as repaired against a
+    file it never opened. A log the arm itself recorded that cannot be read
+    leaves the arm's fields untouched, since the repair was not asked to
+    measure it.
+
+    The ids are reduced against the run's own worktree, so a log written from
+    another working directory records the same repository-relative ids the
+    arms it is compared with use.
+    """
+    from reckon.crew import review as review_module
+
+    recorded = str(
+        _recorded_arm_fields(manifest_text, arm).get("log_path") or ""
+    ).strip()
+    named = str(log_path or "").strip()
+    resolved, readable = _arm_log_path(named or recorded, manifest)
+    if not readable:
+        if named:
+            raise CrewError(
+                f"the log {named!r} the arm repair names cannot be read as a file "
+                f"beside {manifest}; re-point the arm at a log that exists"
+            )
+        return None
+    try:
+        log_text = resolved.read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        raise CrewError(f"the log at {resolved} could not be read: {exc}") from exc
+
+    arm_directory: str | None = None
+    if run_id:
+        pointer = pointer_path(run_id)
+        if pointer.is_file():
+            try:
+                arm_directory = str(read_pointer(run_id).get("worktree") or "") or None
+            except CrewError:
+                arm_directory = None
+    return review_module.arm_log_observation(log_text, arm_directory)
 
 
 def repair_manifest_arm(
@@ -3577,10 +3674,17 @@ def repair_manifest_arm(
     Only the arm's revision is required, and it must be the commit object id
     itself: a repair that wrote another spelling would leave the arm at
     something the gate still cannot compare. The command and the log path are
-    optional, because a re-pointed arm commonly ran at a revision the worker
-    recorded no log for, and re-pointing says nothing about the exit status or
-    the failure ids that arm already carried. A manifest with no top-level line
-    for that arm is refused rather than half-repaired.
+    optional.
+
+    When the arm points at a log that can be read — the one this repair names,
+    or the one the arm already recorded — the arm's exit status, failure ids and
+    completion are re-derived from that log rather than carried over. The
+    red-base rule reads the manifest's literal ``completed`` key and its ids, so
+    an arm re-pointed at a log whose run did complete must not go on declaring
+    the result of the run it was pointed at before. A log named explicitly by
+    this repair that cannot be read is refused, because the coordinator asked
+    for a measurement the repair could not take. A manifest with no top-level
+    line for that arm is refused rather than half-repaired.
     """
     name = str(arm).strip()
     if name not in SUITE_ARMS:
@@ -3602,8 +3706,18 @@ def repair_manifest_arm(
         original = manifest.read_text(encoding="utf-8")
     except OSError as exc:
         raise CrewError(f"the manifest at {manifest} could not be read: {exc}") from exc
+
+    observation = _arm_log_observation(
+        original, name, manifest, log_path=log_path, run_id=run_id
+    )
+
     rewritten, previous = _arm_line_replaced(
-        original, name, target, command=command, log_path=log_path
+        original,
+        name,
+        target,
+        command=command,
+        log_path=log_path,
+        observation=observation,
     )
     if rewritten is None:
         raise CrewError(
@@ -3623,6 +3737,8 @@ def repair_manifest_arm(
         "manifest": str(manifest),
         "repaired_at": _utc_now(),
     }
+    if observation is not None:
+        record["observation"] = observation
     _write_json(run_dir(run_id) / ARM_REPAIR_RECORD_NAME, record)
     return record
 
