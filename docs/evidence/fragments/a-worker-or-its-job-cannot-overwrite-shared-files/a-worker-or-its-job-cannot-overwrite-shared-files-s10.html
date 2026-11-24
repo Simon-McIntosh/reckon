@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-or-its-job-cannot-overwrite-shared-files">
+  <meta name="plan-evidence-for" content="a-worker-or-its-job-cannot-overwrite-shared-files">
+  <title>Shown on the fleet: four arms hold, the census fails | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>Shown on the fleet: the incident's call fails and the fleet survives a dead supervisor</h1>
+      <p class="lead">A dispatched worker replayed the incident's three-argument call at a decoy chain of the incident's depth &mdash; directly, through <code>sbatch</code>, through <code>srun</code> and by the scheduler binary's absolute path &mdash; and the redirect was refused in all four, the decoy interpreter byte-identical afterwards. The same redirect at a decoy in a granted directory was refused by the file's own mode while a writable neighbour in that directory was written. The fleet health series read zero writable interpreters on every sample of the last 24 hours, and an allocation outlived two <code>SIGKILL</code>s of the supervisor it started. The census of worker-written gate wrappers does not hold, so the section stays open.</p>
+    </header>
+
+    <section id="shown-on-the-fleet-arms">
+      <h2>What was measured</h2>
+      <ul>
+        <li><strong>The incident's call, three routes plus the absolute path.</strong> One <code>all_debug</code> job (<code>1343880</code>) composed the product's own <code>reckon._worker_fence.fence_argv</code> around a decoy chain of the incident's depth (worktree <code>.venv</code> &rarr; decoy environment &rarr; <code>bin/python3</code> &rarr; decoy interpreter). The worker's gate shell wrote its <code>$3</code> as a "log", which is the incident's argument shuffle. Every route returned the wrapper's own stderr, <code>.../.venv/bin/python: Read-only file system</code>, and the decoy's size, nanosecond mtime and sha256 were unchanged in all four. The <code>srun</code> route created no scheduler step &mdash; the shim re-entered the fence &mdash; and the absolute path reached the shim, which is &sect;15's shield doing its job from a worker's own call.</li>
+        <li><strong>The file's own permission, apart from the fence.</strong> Job <code>1343916</code>: the same wrapper redirected onto a <code>0555</code> decoy in a granted directory and got <code>Permission denied</code>, while a <code>0755</code> decoy of the same shape in the same directory was replaced and a plain write in that directory succeeded. The pair attributes the refusal to the mode, not to the fence.</li>
+        <li><strong>Health series, 24 hours.</strong> 1,169 samples ending 2026-11-24T08:44:10Z: 1,166 read <code>0</code> writable interpreters, 3 read <code>unknown</code> (the sampler said so rather than reporting a repair), and none read above zero.</li>
+        <li><strong>An allocation outliving its supervisor.</strong> Job <code>1343953</code> ran the product's own <code>fleet_node.generate_hold_script</code> as its batch step with a replaceable Python supervisor. Two <code>SIGKILL</code>s produced three starts with the product's 5&nbsp;s then 10&nbsp;s backoff, the stand-in descendant stayed alive, and the queue state read <code>RUNNING</code> at every sample. The gated rehearsal's live <code>srun</code> step cannot be composed from inside a worker fence; two attempts record that boundary rather than hiding it.</li>
+        <li><strong>The census fails.</strong> Over the 200 run directories created after <code>0388ce623c</code>, 11.0&nbsp;% hold a worker-written gate-invoking script and 13.5&nbsp;% any worker-written script, against 5.0&nbsp;% and 7.0&nbsp;% in the 200 before it. The section asks for under 5&nbsp;%. The wrappers remaining are mostly base-versus-head measurement arms of other plans &mdash; the incident's shape almost exactly &mdash; and the original census tool is gone with its pruned run directory, so the section's 43-of-200 baseline cannot be reproduced by either instrument.</li>
+      </ul>
+      <p>The full record, with exact commands, job ids, receipts and the census figure, is
+      <a href="/reckon/evidence/archive/a-worker-or-its-job-cannot-overwrite-shared-files-landed">the landed evidence record</a>.</p>
+    </section>
+
+    <section id="shown-on-the-fleet-open">
+      <h2>What remains</h2>
+      <p>Arms A to D need no further work. The section closes when a census holds under 5&nbsp;% after the landing under a rule stated in advance, with its before-figure re-measured by that same rule &mdash; the composed gate command being what workers actually reach for on gate nodes is the likely closure, with this census as its after-the-fact check rather than a new wrapper-counting instrument.</p>
+    </section>
+  </main>
+</body>
+</html>
