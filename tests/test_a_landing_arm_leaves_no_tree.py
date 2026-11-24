@@ -151,7 +151,7 @@ def test_an_unbounded_partition_licenses_no_removal(node_root: Path):
 def test_the_sweep_runs_from_its_job_entry_point(
     node_root: Path, monkeypatch: pytest.MonkeyPatch
 ):
-    """The entry point a landing job's shell step calls is the sweep itself."""
+    """The entry point a landing job's shell command calls is the sweep itself."""
     now = time.time()
     tree = _arm_tree(node_root, "entry", age_seconds=LIMIT_SECONDS + 60, now=now)
     monkeypatch.setattr(landing_measure, "arm_tree_root", lambda: node_root)
