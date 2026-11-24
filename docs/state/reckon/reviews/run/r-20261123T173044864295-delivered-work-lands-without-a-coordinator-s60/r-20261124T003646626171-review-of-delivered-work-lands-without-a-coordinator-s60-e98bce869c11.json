@@ -1,0 +1,103 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:1726",
+    "reckon/crew_dispatch_commands.py:1800",
+    "reckon/crew_run_commands.py:4765",
+    "reckon/crew/queue_landing.py:1226",
+    "reckon/crew/promotion_records.py:1356",
+    "reckon/crew/run_time_profile.py:172",
+    "reckon/crew/picker/lane_context.py:208",
+    "reckon/crew/runs.py:699"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T00:37:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 1453,
+      "severity": "non-blocking",
+      "text": "A resume advice stating a fractional allowance (\"budget extended to 1.5 hours\") is rebuilt as the string \"1.5h\", which parse_duration refuses, so the stated extension is silently dropped and the original node budget is returned. At the base revision the same advice resolved to 5400 seconds via the accepted \\d+(?:\\.\\d+)? amount form; this narrows an accepted input on a recovery path that shortens the fence rather than lengthening it."
+    },
+    {
+      "file": "reckon/crew/run_time_profile.py",
+      "line": 159,
+      "severity": "non-blocking",
+      "text": "The ledger budget reader now hands every value to parse_duration, whose bare-number meaning is seconds; the base reader read a bare number as minutes, so a row carrying \"60\" moves from the 60-minute band to the 1-minute band. Word units (\"90 minutes\") and decimal suffixes (\"1.5h\") the base regex accepted now resolve to None and fall through to the token key, rebucketing historical ledger rows without a test covering it."
+    },
+    {
+      "file": "reckon/crew/dispatch_picker.py",
+      "line": 141,
+      "severity": "non-blocking",
+      "text": "parse_dispatch_due now reads the offset with the case-sensitive parse_duration, so an uppercase suffix the base regex accepted with re.IGNORECASE (\"4H\") is refused and the CLI raises \"--due must be an ISO instant or a duration such as 4h\". The same narrowing reaches placement.debug_job_time_limit via parse_duration's lowercase-only _DURATION."
+    },
+    {
+      "file": "tests/test_one_duration_parser.py",
+      "line": 136,
+      "severity": "non-blocking",
+      "text": "The 'one message' assertion computes its expected value from node.duration_refusal(malformed), the same function parse_duration raises with, so both sides move together: a change to the canonical sentence leaves the assertion true. It does guard against a caller using a different message, but it is not independent of the value under test and cannot fail if the message changes."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T173044864295-delivered-work-lands-without-a-coordinator-s60/manifest.md",
+      "line": 30,
+      "severity": "non-blocking",
+      "text": "The after_suite record states 'six non-core ids all pass in isolation'; the two after arms' gate logs carry seven distinct ids absent from the base arm (three in head-arm.log, four in head-arm-run1.log, disjoint). The landing line repeats the six count. The conclusion (no added failure) still holds, but the recorded figure is one short of what the logs measure."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_one_duration_parser.py:60-192 pins each form, the zero case, the calibration reader and the no-second-parser invariant, and the last assertion fails at base; the runs.py:1453 fractional path has no assertion, and the one-message assertion at test_one_duration_parser.py:136 is not independent of the message.",
+    "evidence": "The base and head gate logs carry revision, command and a closing EXIT= line under the run directory, and the negative-control log shows the base case red; the suite delta is honest after attribution (all head-only ids pass in isolation) but the manifest's non-core count is off by one and its isolation run kept no log.",
+    "fit": "The added names (duration_refusal, parse_duration) follow the module's naming and style at reckon/crew/node.py:339, and the calibration local import at reckon/calibration.py:143 carries its circular-import reason.",
+    "goal_fidelity": "reckon/crew/node.py:973 parse_duration is now the one owner and the four duplicate parsers are deleted; the four declared forms read to identical seconds through every reader, though three lesser-accepted forms (upper-case suffix, word units, decimals) are narrowed.",
+    "reuse": "Every added definition extends reckon/crew/node.py's existing parse_duration owner and four duplicate parsers were removed; the search over reckon/crew and reckon/calibration.py found no remaining duration-notation owner at the reviewed head.",
+    "scope_discipline": "Every path in the diff (11) is inside the declared write paths, and no production file outside the duration-reader set was touched."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261124T003646626171-review-of-delivered-work-lands-without-a-coordinator-s60-e98bce869c11",
+  "reviewed_base_sha": "bf5ff985a74aa4a5e3634a1423d646553740edaf",
+  "reviewed_head_sha": "e98bce869c11f4c51ab88d547920edaed36c1929",
+  "reviewed_run_id": "r-20261123T173044864295-delivered-work-lands-without-a-coordinator-s60",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "suite_delta": {
+    "after_failure_counts": [
+      69,
+      71
+    ],
+    "attribution": "All seven raw head-only ids were re-run in isolation at e98bce86 (18 passed, 124.60s), so none is a failure the change adds; the review files added_failure_count 0.",
+    "baseline_failure_count": 67,
+    "logs": [
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T173044864295-delivered-work-lands-without-a-coordinator-s60/base-arm.log",
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T173044864295-delivered-work-lands-without-a-coordinator-s60/head-arm.log",
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T173044864295-delivered-work-lands-without-a-coordinator-s60/head-arm-run1.log"
+    ],
+    "raw_added_ids_union": [
+      "tests/test_a_failed_promotion_restores_its_plan.py::test_the_plan_lock_covers_the_snapshot_through_restoration[before_comment]",
+      "tests/test_a_refused_review_is_not_recomposed_unchanged.py::test_a_refusal_naming_another_runs_claim_is_composed_again",
+      "tests/test_a_successful_launch_is_recorded.py::test_a_late_refusal_only_appends_history[restore-direct]",
+      "tests/test_admission_survives_a_kill.py::test_a_killed_pass_keeps_every_request_and_launches_each_once[missing-pointer]",
+      "tests/test_overlapping_queued_requests_launch_in_turn.py::test_one_pass_resolves_each_requests_claims_at_most_once",
+      "tests/test_the_drain_keeps_up_with_a_burst.py::test_a_measurement_wait_holds_no_preparation_slot",
+      "tests/test_the_drain_keeps_up_with_a_burst.py::test_landings_for_different_repositories_do_not_wait"
+    ]
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T00:56:31.427430+00:00",
+  "total": 106,
+  "verdicts": {
+    "call_sites": "Verified the changed functions' production callers at the reviewed head: dispatch_launch.py:1726 (debug_job_time_limit), crew_dispatch_commands.py:1800 (parse_dispatch_due), crew_run_commands.py:4765 (partition_max_seconds), queue_landing.py:1226 and promotion_records.py:1356 (declared_gate_seconds), run_time_profile.py:172 and picker/lane_context.py:208-209 (_budget_minutes), runs.py:699 (_attempt_budget_seconds).",
+    "diff": "Read commit by commit (a89f28e, 8b54be0, 09a6360, e98bce8): the change unifies the parser and the refusal message, adds zero/clock/bare-second forms, and updates one existing test whose 'unreadable budget becomes the ceiling' behaviour was intentionally replaced by a refusal.",
+    "done_when": "tests/test_one_duration_parser.py exists and passes 7 of 7 at e98bce86 (re-run here); its negative control test_no_second_duration_parser_remains fails at the base revision naming six modules, and my grep of the reviewed tree finds no second notation parser.",
+    "goal": "The node goal is '\u00a760 \u2014 the crew parses a duration in one place'; the diff removes parse_gate_duration, _duration_seconds, _MINUTES_RE and _DECLARED_DURATION and routes every reader through reckon/crew/node.py:973 parse_duration, so all four declared forms read identically wherever a duration is read.",
+    "manifest": "The manifest records status complete, names both after arms, and carries revision/command/EXIT lines in the arm logs; its landing narrative miscounts the non-core ids (six recorded, seven measured) and its baseline_suite/after_suite fields are prose rather than the armed JSON template shape.",
+    "write_paths": "The diff touches 11 files, every one inside the declared write paths: reckon/crew/{node,placement,landing_measure,promotion_records,runs,run_time_profile,dispatch_picker}.py, reckon/calibration.py, reckon/crew_run_commands.py, and the two test files."
+  }
+}
