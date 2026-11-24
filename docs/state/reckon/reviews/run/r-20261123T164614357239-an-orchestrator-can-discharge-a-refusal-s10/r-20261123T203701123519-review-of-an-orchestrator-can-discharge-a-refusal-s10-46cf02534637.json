@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/evidence.py:1915 compose_landed_record",
+    "reckon/evidence.py:1950 fragment_dir"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T07:58:58Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/an-orchestrator-can-discharge-a-refusal/an-orchestrator-can-discharge-a-refusal-s10.html",
+      "line": 2,
+      "severity": "non-blocking",
+      "text": "The fragment duplicates an already-landed evidence record rather than extending it: docs/evidence/fragments/an-orchestrator-can-discharge-a-refusal/preserve-ordinary-resume-after-a-lane-change.html:2 carries the same h2 'An ordinary resume finds the session a lane change started' and the same tests/test_lane_change_keeps_resume_identity.py verification, and because the two files have distinct node ids reckon/evidence.py:1915 compose_landed_record composes both into \u00a710's cumulative record, so the published evidence page will show the section's verification twice under one heading. The reviewed node's own contract says a routine landing writes no fragment (prompt.txt, CONTRACT \u2014 LANDING YOUR RECORD). Non-blocking because the fragment is accurate, its figures reconcile with logs/gate-head.log and logs/negative-control.log, and the duplication corrupts nothing."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit over 4fa07b80a8..46cf025346: three docs(evidence) commits (14f2f7faea, e8bb6b1adc, 46cf025346) touching one file, the fragment, +54 -0, with no product source, no test, and no plan edit.",
+    "done_when": "The done_when is 'an ordinary crew resume --advice finds the session id after a lane-changing resume'; the gate at tests/test_lane_change_keeps_resume_identity.py:262 asserts 'resume' appears in the composed argv after a real change_lane plus a plain resume, which is exactly that measure, and the run's recorded result is 6 passed / EXIT=0 (logs/gate-head.log).",
+    "goal": "The node's goal is \u00a710 of the plan, 'A lane change does not strand the ordinary resume'; the landed fragment at docs/evidence/fragments/an-orchestrator-can-discharge-a-refusal/an-orchestrator-can-discharge-a-refusal-s10.html:1 records that verification, and the behaviour it asserts already exists on the branch at reckon/crew/dispatch_sessions.py:941 (_current_harness_session) and reckon/_backends.py:2433 (_backend_for_stream), both confirmed ancestors of the reviewed base.",
+    "manifest": "Read in full: it records status complete, a landing line, the literal gate command, both log paths, a negative_control_log at logs/negative-control.log, evidence_inputs naming the real functions, and rubric self-checks for all six dimensions.",
+    "write_paths": "The declared write paths are the s10 evidence fragment and its figure directory; the diff touches only the single fragment path and leaves the figure directory empty, so the change is inside its declared scope."
+  },
+  "justifications": {
+    "durability": "The regression at tests/test_lane_change_keeps_resume_identity.py:275 fails when _backend_for_stream is made a looked-up-per-source rather than per-writer, as logs/negative-control.log shows, but that test is pre-existing and this node added none.",
+    "evidence": "logs/gate-head.log records 6 passed / EXIT=0 at revision 4fa07b80a8 for the done_when's own case, and logs/negative-control.log records 2 failed / EXIT=1 with 'assert \"resume\" in argv' at tests/test_lane_change_keeps_resume_identity.py:262 reddening under the restored first-harness lookup.",
+    "fit": "The fragment follows the sibling docs/evidence/fragments/an-orchestrator-can-discharge-a-refusal/preserve-ordinary-resume-after-a-lane-change.html:1 idiom (section id, h2/h3, arms table) and names no forbidden label, though it repeats that sibling's h2 verbatim and omits a trailing newline.",
+    "goal_fidelity": "The landed fragment at docs/evidence/fragments/an-orchestrator-can-discharge-a-refusal/an-orchestrator-can-discharge-a-refusal-s10.html:1 records the \u00a710 verification accurately, but the behaviour it documents at reckon/crew/dispatch_sessions.py:941 already existed before this node, so the node re-records rather than delivers the section's endpoint.",
+    "reuse": "docs/evidence/fragments/an-orchestrator-can-discharge-a-refusal/preserve-ordinary-resume-after-a-lane-change.html:1 already records the same \u00a710 verification with the same h2 and the same test, and reckon/evidence.py:1915 composes both fragments into the plan's cumulative record because they carry distinct node ids, so the addition duplicates the owner rather than extending it.",
+    "scope_discipline": "Every path in the diff is inside the declared write path, but the fragment was written although the dispatch contract at prompt.txt states a routine landing writes none, so it carries a deliverable the goal did not require."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261123T203701123519-review-of-an-orchestrator-can-discharge-a-refusal-s10-46cf02534637",
+  "reviewed_base_sha": "4fa07b80a8d5335def32b0297d595958115ae7e4",
+  "reviewed_head_sha": "46cf025346371762b11c2454dccd51392cbc0d07",
+  "reviewed_revision_note": "Base 4fa07b80a8d5335def32b0297d595958115ae7e4 is the reviewed node's orientation base; head 46cf025346371762b11c2454dccd51392cbc0d07 is the commit range's tip, read directly with git diff and git show.",
+  "reviewed_run_id": "r-20261123T164614357239-an-orchestrator-can-discharge-a-refusal-s10",
+  "rubric": "",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T09:20:00+00:00",
+  "total": 90
+}
