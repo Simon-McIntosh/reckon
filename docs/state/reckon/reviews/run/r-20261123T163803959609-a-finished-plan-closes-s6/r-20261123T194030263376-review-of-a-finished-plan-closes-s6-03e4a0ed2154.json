@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "call_sites_note": "The change is a static evidence HTML fragment with no runtime code path; none found.",
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T07:58:51Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-finished-plan-closes/a-finished-plan-closes-s6.html",
+      "line": 21,
+      "severity": "non-blocking",
+      "summary": "The done_when names a first census run at the base commit (893e18cc82) as the control reporting the 21 plans of \u00a71, but no census was run at that revision; the fragment compares against \u00a71's quoted meta figures instead, and the only census log is at f0bc4bc9d5e4, so the base arm is unmeasured here. It is non-blocking because the \u00a72 closable readiness the census calls does not exist at the base revision, making a literal base-arm run impossible.",
+      "text": "The done_when's base-commit control census was never run; the fragment substitutes \u00a71's quoted figures, so the before arm is not measured by this node."
+    },
+    {
+      "file": "census-out/control/control.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "summary": "The run directory carries control/control.log reading plans_scanned=0, the abandoned fixture control that scanned nothing, while the actual classifier control is the --self-check whose five-row output exists only in the run stream and no named log; a reader opening the control artefact sees a null measurement and the manifest's self-check claim is not backed by a log on disk.",
+      "text": "census-out/control/control.log records plans_scanned=0 (an empty control), and the real --self-check output is not persisted to a named log."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit over 893e18cc..03e4a0ed; four commits, one new 132-line evidence fragment, no product or test change.",
+    "done_when": "The done_when requires the census to report no unclosed/unstated 100% plan and no blocked-on-finished-gate plan, with a base-commit control reporting \u00a71's 21 plans; census-final.log gives violations=16, blocked=0, and no base-commit census arm exists.",
+    "goal": "The node goal is '\u00a76 \u2014 Every finished plan is closed or kept open for a stated reason' (prompt.txt:38); the landed fragment records a census that leaves 16 plans open with nothing stated, so the goal is documented as qualified, not delivered.",
+    "manifest": "Read; the reviewed manifest records status complete, tests = the census command, test_logs = census-final.log, a reconciling artifacts summary and all six rubric lines.",
+    "write_paths": "Declared paths are the s6 evidence fragment and a figures dir; the diff touches only docs/evidence/fragments/a-finished-plan-closes/a-finished-plan-closes-s6.html."
+  },
+  "justifications": {
+    "durability": "No test or committed instrument guards the census predicate: census_closable.py lives only in the run directory and will not survive run-directory collection, so the measure is not reproducible from the repository.",
+    "evidence": "census-final.log reports 18 mounts, 226 plans, finished_open=17 violations=16 stated=1 blocked_on_finished_gate=0 and census.json reconciles, but no census at the base 893e18cc exists as the done_when's control arm.",
+    "fit": "The fragment follows the sibling evidence template (meta docs-project/reckon-type/plan-verifies, article.r-note, data-node) at docs/evidence/fragments/a-finished-plan-closes/a-finished-plan-closes-s6.html:1, matching closable-readiness.html.",
+    "goal_fidelity": "The fragment at docs/evidence/fragments/a-finished-plan-closes/a-finished-plan-closes-s6.html:96 states the section's target is not met, so the section goal (\u00a76: every finished plan closed or kept open for a stated reason) is recorded but not achieved.",
+    "reuse": "The fragment adds no code; it consumes roadmap readiness, closure_blockers and deferred_remainder rather than re-parsing declarations, and the diff forks no repository capability.",
+    "scope_discipline": "The whole diff is the single declared evidence fragment (git diff --stat: 1 file, +132), with the census script and logs kept in the run directory."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261123T194030263376-review-of-a-finished-plan-closes-s6-03e4a0ed2154",
+  "reviewed_base_sha": "893e18cc824a97f6f8efbf942c7fb61790bb8a39",
+  "reviewed_head_sha": "03e4a0ed21544ef3d14269b25258670f340d16e7",
+  "reviewed_run_id": "r-20261123T163803959609-a-finished-plan-closes-s6",
+  "scores": {
+    "durability": 9,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 13,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T08:32:06.466715+00:00",
+  "total": 90
+}
