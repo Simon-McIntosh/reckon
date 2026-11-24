@@ -212,33 +212,48 @@ SMALL_NODE_RULE = (
     "  A node is small when its diff has at most 50 changed lines (added plus\n"
     "  deleted), or when it changes no product source or tests and has at most\n"
     "  300 changed lines. A small node writes one `landing:` line in its manifest,\n"
-    "  stating what changed and its measure's figure. Its landing fragment is\n"
-    "  always permitted at its scope path; beyond that fragment the node writes\n"
-    "  no figure and no evidence prose unless its done-when names that artifact;\n"
-    "  naming one does not permit the other. Any single data file above 300,000\n"
-    "  bytes belongs in the run directory, not the repository.\n"
+    "  stating what changed and its measure's figure. Any single data file above\n"
+    "  300,000 bytes belongs in the run directory, not the repository.\n"
 )
 
-# The rule withholds a figure unless the node's done-when names one, so the
-# worker is told which side of that condition its own node is on rather than
-# left to apply a conditional to a node it cannot see from the inside. The
-# done-when is the node's own declaration of what it delivers, which is exactly
-# the artifact the rule keys on. The two clauses are emitted from one
-# classification, so the prompt never tells the same worker both to write a
-# figure and to withhold one, and each names the clause the other withholds so
-# a reader of either learns the whole rule. The withheld prose is the prose
-# OUTSIDE the landing fragment, because the landing contract asks the same
-# worker for the fragment as its evidence anchor; a clause that forbade the
-# fragment would contradict the clause it sits beside, and a reviewer reading
-# the ban alone once made a worker delete its own landing record.
-ARTIFACT_NAMED_CLAUSE = (
-    "  Your done-when names an artifact, so this node may write that artifact. It\n"
-    "  permits no other figure and no evidence prose outside the landing fragment,\n"
-    "  which is always permitted.\n"
+# The evidence rule, stated in one place and composed into every landing
+# contract. The rule it replaces was carried in four constants — the small-node
+# rule, both landing contracts and the artifact clause — and they drifted into
+# telling one worker both to draw a figure and to withhold one. A worker obeys
+# the withholding clause and writes a fragment of prose, so the figure reflex
+# has to be the only clause on the subject rather than one of two that disagree.
+EVIDENCE_FIGURE_RULE_HEADER = "EVIDENCE — WHAT A RESULT OWES\n"
+
+# The obligations that hold whichever side of the figure condition the node is
+# on. This is the text a change edits, and because every landing contract reads
+# it through the one producer below, editing it here composes into every prompt.
+EVIDENCE_FIGURE_RULE_COMMON = (
+    "  Keep evidence prose to the landing line, and write an evidence fragment\n"
+    "  only for a negative result; the landing fragment is always permitted at\n"
+    "  its scope path.\n"
 )
-ARTIFACT_UNNAMED_CLAUSE = (
-    "  Your done-when names no artifact, so this node writes no figure and no\n"
-    "  evidence prose outside the landing fragment, which is always permitted.\n"
+
+# The figure sentence, composed only where the done-when states a measure. It
+# asks for the figure and names where the node's own fence puts it; the location
+# is a format field so the plan carrier and the brief carrier state the same
+# rule with the directory each actually grants.
+EVIDENCE_FIGURE_ANNOUNCED = (
+    "  Your done-when states a measure, so draw the figure that shows it — or an\n"
+    "  animation where the result is a sequence in time — wherever the result is\n"
+    "  one a figure shows more clearly than prose, and name it on the manifest's\n"
+    "  `figures:` line.\n"
+)
+EVIDENCE_FIGURE_WITHHELD = (
+    "  Your done-when states no measure, so this node has no figure to draw.\n"
+)
+
+# The figure-location sentence, composed beside the figure sentence so a worker
+# that does not draw this node still learns where a figure its work warrants
+# belongs. Carried in the plan carrier naming the node's own directory, which is
+# the directory its fence grants.
+FIGURE_LOCATION_SENTENCE = (
+    "  A figure goes under the topic directory {directory} with the\n"
+    "  project-absolute {src}; never an image of what is naturally a table.\n"
 )
 
 # The words a done-when uses to name a figure artifact. A word-boundary match
@@ -248,20 +263,45 @@ FIGURE_NAME_PATTERN = re.compile(
     r"\b(?:figures?|diagrams?|plots?|charts?|graphs?)\b", re.IGNORECASE
 )
 
+# The forms a done-when uses to state a measured quantity rather than name a
+# figure artifact: a number carrying a unit, a percentage or a count. A gate
+# that cuts runtime by 30 percent states a measure whether or not it says
+# "figure", and the clause composed from it has to read that way, or the node is
+# told it states no measure while its own done-when states one.
+MEASURE_PATTERN = re.compile(
+    r"\b\d+(?:[.,]\d+)?\s*(?:%|per\s?cent\b|percentage\s+points?\b|"
+    r"ms\b|milli\s?seconds?\b|µs\b|micro\s?seconds?\b|ns\b|"
+    r"nano\s?seconds?\b|seconds?\b|minutes?\b|hours?\b|days?\b|times\b|"
+    r"x\b|bytes?\b|[kmg]b\b|lines?\b|rows?\b|tests?\b|nodes?\b|"
+    r"runs?\b|points?\b)",
+    re.IGNORECASE,
+)
 
-def _artifact_allowance(done_when: str) -> str:
-    """State the figure allowance this node's own done-when grants.
 
-    A done-when naming a figure artifact permits that figure and still withholds
-    the evidence prose outside the landing fragment; one naming none withholds
-    both outside it. The landing fragment is always permitted. The node's
-    done-when is the only input, so the clause states the node's own condition
-    rather than asking the worker to resolve a conditional against material it
-    was not given.
+def _evidence_figure_rule(done_when: str, *, directory: str, src: str) -> str:
+    """Compose the evidence rule for this node's own done-when.
+
+    The rule's text is stated once in the constants above; this function is the
+    one producer every landing contract reads, so a change to the rule's wording
+    changes it in every composed contract rather than in one of four copies. A
+    done-when stating a measure — naming a figure artifact, or stating a
+    measured quantity such as a percentage or a duration — gets the figure asked
+    for; one stating neither is told it has no figure to draw, and is asked for
+    none. The node's done-when is the only input, so the clause states which side
+    this node is on rather than asking the worker to apply a conditional to a
+    node it cannot see from the inside.
     """
-    if FIGURE_NAME_PATTERN.search(str(done_when or "")):
-        return ARTIFACT_NAMED_CLAUSE
-    return ARTIFACT_UNNAMED_CLAUSE
+    text = str(done_when or "")
+    if FIGURE_NAME_PATTERN.search(text) or MEASURE_PATTERN.search(text):
+        figure = EVIDENCE_FIGURE_ANNOUNCED
+    else:
+        figure = EVIDENCE_FIGURE_WITHHELD
+    return (
+        EVIDENCE_FIGURE_RULE_HEADER
+        + EVIDENCE_FIGURE_RULE_COMMON
+        + figure
+        + FIGURE_LOCATION_SENTENCE.format(directory=directory, src=src)
+    )
 
 
 # The worktree-landing contract, embedded only when the worker can write its
@@ -282,7 +322,7 @@ def _artifact_allowance(done_when: str) -> str:
 # mechanism that does not fit a landing line. Nothing splices a fragment into a
 # plan's landed record: the landed record is synthesized once at closure, which
 # links the fragment from the node's row and reproduces none of its text.
-# Figure placement and the meta-line ban are stated
+# The meta-line ban is stated
 # because a worker still edits the plan in its tree when it must. Kept as a
 # standalone constant so a test can compose with it masked out and diff against
 # the live prompt, which proves the addition is removable and scoped.
@@ -306,14 +346,6 @@ PLAN_LANDING_CONTRACT = (
     "  without reproducing its text.\n"
     + "  Every element id in the fragment begins with the node id, so sibling\n"
     "  fragments composed into one record cannot claim the same anchor.\n"
-    + "  Use a figure wherever a spatial, plotted or sequential relationship is clearer\n"
-    "  shown than described, under your own docs/figures/<plan>/<node-id>/ with the\n"
-    "  project-absolute src /<project>/figures/<plan>/<node-id>/...; never an image\n"
-    "  of what is naturally a table. Name each figure you keep on a `figures:`\n"
-    "  line in your manifest, giving the path the run commits under the plan's\n"
-    "  figure directory docs/figures/<plan>/; a node with nothing to show names\n"
-    "  none, and the manifest check holds a named figure to a file the run's\n"
-    "  commits carry there.\n"
     "  Do not edit the plan-version or plan-modified meta lines: every worker\n"
     "  touching them makes every merge conflict there."
 )
@@ -331,9 +363,10 @@ PLAN_LANDING_CONTRACT = (
 # without knowing the run id. The `landing:` line is named here too, because a
 # brief node is small on the same terms as a plan node and the small-node rule
 # below reaches both carriers; with no plan section to land on, that line stays
-# on the run's own record. The header, the figure convention and the meta-line
-# ban are unchanged, so the two landing contracts differ only in where the
-# record goes, whether it is committed, and where the landing line lands. Kept
+# on the run's own record. The header and the meta-line ban are shared, the
+# figure convention is composed beside either carrier from the one evidence rule
+# below, so the two landing contracts differ only in where the record goes,
+# whether it is committed, and where the landing line lands. Kept
 # as a standalone constant so a test can compose with it masked out and diff
 # against the live prompt, which proves the substitution is removable and
 # scoped.
@@ -351,10 +384,7 @@ BRIEF_LANDING_CONTRACT = (
     "  none, its `landing:` line being then the whole prose account of the node.\n"
     "  Nothing splices a fragment into a plan's landed record.\n"
     + SMALL_NODE_RULE
-    + "  Use a figure wherever a spatial, plotted or sequential relationship is clearer\n"
-    "  shown than described, under docs/figures/<topic>/ with the project-absolute\n"
-    "  src /<project>/figures/...; never an image of what is naturally a table.\n"
-    "  Do not edit the plan-version or plan-modified meta lines: every worker\n"
+    + "  Do not edit the plan-version or plan-modified meta lines: every worker\n"
     "  touching them makes every merge conflict there."
 )
 
@@ -985,15 +1015,26 @@ RUNTIME FILESYSTEM
         # authority leaves the fact unset and keeps the plan carrier for a
         # writable node, the shape every direct composer has used.
         run_record_carrier = brief_only or writes_landing_fragment is False
-        # The small-node rule ends on a conditional the worker cannot resolve
-        # from inside its own node, so the clause stating which side of it this
-        # node is on is composed per node from the node's own done-when. It is
-        # appended rather than spliced into the constant, so masking either
+        # The evidence rule ends on a conditional the worker cannot resolve from
+        # inside its own node, so which side this node is on is composed per node
+        # from its own done-when, by the one producer every carrier reads. It is
+        # appended rather than spliced into either constant, so masking either
         # contract still reproduces the prompt with exactly that block removed.
-        landing_contract = (
-            (BRIEF_LANDING_CONTRACT if run_record_carrier else PLAN_LANDING_CONTRACT)
-            + "\n"
-            + _artifact_allowance(node.done_when)
+        # The topic directory is the one this carrier's fence actually grants:
+        # the plan carrier names the node's own directory, the brief carrier the
+        # plan-wide topic a brief run writes into.
+        if run_record_carrier:
+            landing_contract = BRIEF_LANDING_CONTRACT
+            figure_directory = "docs/figures/<topic>/"
+            figure_src = "src /<project>/figures/<topic>/"
+        else:
+            landing_contract = PLAN_LANDING_CONTRACT
+            figure_directory = "docs/figures/<plan>/<node-id>/"
+            figure_src = "src /<project>/figures/<plan>/<node-id>/"
+        # The one producer: the rule's text is stated in a single place and
+        # every composed contract reads it here.
+        landing_contract += "\n" + _evidence_figure_rule(
+            node.done_when, directory=figure_directory, src=figure_src
         )
     closure_authority_contract = CLOSURE_AUTHORITY_CONTRACT if can_land else ""
     # The fence names the project's template and the rule that resolves it over
@@ -1143,7 +1184,8 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
 {commits_line}
   changed_paths: <explicit list>
   retry_failures: <failure ids for repeated runs of the same command, including unattributed failures; record each before applying the stop rule>
-{landing_key}  tests: <the gate command that actually ran — the literal text a shell was handed, never a description of it and never a template command carrying an unsubstituted placeholder>. Promotion fills its gate receipt from this line, so a sentence naming the suite rather than the command cannot be re-run and is refused; the log's own `# command:` header line is the fallback when this line is absent
+{landing_key}  figures: none | <each figure path the run commits, under docs/figures/<plan>/. A node with nothing to show names none; the composed evidence rule asks for a figure only where the done-when states a measure>
+  tests: <the gate command that actually ran — the literal text a shell was handed, never a description of it and never a template command carrying an unsubstituted placeholder>. Promotion fills its gate receipt from this line, so a sentence naming the suite rather than the command cannot be re-run and is refused; the log's own `# command:` header line is the fallback when this line is absent
   test_logs: <paths on disk>. A gate log's first line names the revision it ran at, the tree, and the command; its last line is a bare `EXIT=<code>` line, which is where promotion reads the gate's exit status — a log without one leaves the status unread. A gate or base-arm measurement run in a scratch tree also names on its header lines the absolute path of the module under test as imported (`module.__file__`) and the resolved working directory the run resolved from
   measurement_module: <only for a gate or base-arm measurement run in a scratch tree: the absolute path of the module under test as imported — the value the run printed for `module.__file__`>
   measurement_cwd: <only for a gate or base-arm measurement run in a scratch tree: the resolved working directory the run resolved from>

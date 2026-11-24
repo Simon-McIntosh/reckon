@@ -27,7 +27,7 @@ import re
 
 import pytest
 
-from reckon.crew.prompts import ARTIFACT_NAMED_CLAUSE
+from reckon.crew.prompts import EVIDENCE_FIGURE_ANNOUNCED, EVIDENCE_FIGURE_RULE_COMMON
 from tests.test_small_node_prompt import _flat, _prompt
 
 # The landing instruction the artifact clause must not contradict: the sentence
@@ -41,7 +41,7 @@ FRAGMENT_INSTRUCTION = (
 # The exception stated in the clause itself: the withheld prose is the prose
 # outside the fragment, and the fragment is always permitted. Asserted directly
 # so a clause that merely mentions the fragment cannot pass.
-FRAGMENT_EXCEPTION = "outside the landing fragment, which is always permitted"
+FRAGMENT_EXCEPTION = "the landing fragment is always permitted at its scope path"
 
 # A sentence that mentions the evidence prose. Every such sentence must except
 # the fragment: the fragment is named AND permitted, not merely mentioned. The
@@ -119,7 +119,7 @@ def test_no_prompt_forbids_evidence_prose_without_excepting_the_fragment(
 def test_the_named_artifact_clause_excepts_the_fragment_too() -> None:
     """The named clause withholds the prose as well as other figures, so it
     carries the same fragment exception the unnamed clause does."""
-    _assert_no_unexcepted_ban(ARTIFACT_NAMED_CLAUSE)
+    _assert_no_unexcepted_ban(EVIDENCE_FIGURE_RULE_COMMON)
 
 
 def test_the_guard_rejects_a_ban_that_names_the_fragment_but_forbids_it() -> None:
@@ -133,4 +133,4 @@ def test_the_guard_rejects_a_ban_that_names_the_fragment_but_forbids_it() -> Non
 def test_the_figure_named_prompt_still_grants_its_figure() -> None:
     named = _flat(_prompt(done_when=NAMED_DONE_WHEN))
 
-    assert _flat(ARTIFACT_NAMED_CLAUSE) in named
+    assert _flat(EVIDENCE_FIGURE_ANNOUNCED) in named

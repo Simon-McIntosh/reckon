@@ -140,6 +140,23 @@ with an instruction in the next dispatch's prompt. Neither route is a list
 nobody reads. A review reports the same work as a `non-blocking` finding, so
 `outside_scope` and `non-blocking` are the two names one rule wears.
 
+### What a result owes
+
+**A result a figure shows more clearly than prose leaves a figure, not a report.**
+The rule is stated once, in the composed contract every dispatch carries, and it
+reads, in its own words: *Your done-when states a measure, so draw the figure
+that shows it — or an animation where the result is a sequence in time — wherever
+the result is one a figure shows more clearly than prose, and name it on the
+manifest's `figures:` line. Keep evidence prose to the landing line, and write an
+evidence fragment only for a negative result; the landing fragment is always
+permitted at its scope path.* A done-when states a measure by naming a figure
+artifact or by stating a measured quantity — a percentage, a duration, a count —
+so a quantitative done-when that never says "figure" is asked for one. A node
+whose done-when states no measure has no figure to draw and is asked for none. No contract tells a worker both to draw a
+figure and to withhold one: one producer composes the rule from the node's own
+done-when, so a change to its wording reaches every dispatch rather than one of
+several copies.
+
 ### The declared external wait
 
 **When your work submits a job it does not control — a batch job, a queued build,
