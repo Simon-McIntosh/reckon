@@ -15,6 +15,7 @@ from bs4.element import Doctype
 
 from reckon import _plan_html, ledger
 from reckon.figures import figure_row
+from reckon.lifecycle import TERMINAL_STATUSES
 from reckon.resources import ResourceCollision, identify_resource, resolve_resource
 
 
@@ -1193,7 +1194,12 @@ class SprintPlanRow:
     The counts are the ones the plan's closure overview states: sections it
     landed, the runs that landed them and their worker time. ``href`` is the
     plan document the row links, empty when the sprint names a plan with no
-    document — a row must never link a page that is not there.
+    document — a row must never link a page that is not there. ``report_href``
+    is the plan's own evidence report where one was composed, which the row
+    links in preference to the plan document: the report is the account of what
+    the plan landed. ``carried`` marks a plan still open as the sprint closed,
+    and ``carried_to`` names the sprint the close moved it to, empty when the
+    close moved it nowhere.
     """
 
     slug: str
@@ -1205,6 +1211,9 @@ class SprintPlanRow:
     worker_seconds: int
     headline: str
     figures: tuple[LandedFigure, ...] = ()
+    report_href: str = ""
+    carried: bool = False
+    carried_to: str = ""
 
 
 _SPRINT_PAGE_SUFFIX = "-closing"
@@ -1237,6 +1246,20 @@ def _served_href(project: str, resource: Any) -> str:
     if relative is not None:
         return f"/{project}/{relative}"
     return ""
+
+
+def _report_href(docs_dir: Path, project: str, slug: str) -> str:
+    """The served address of a plan's evidence report, or ``""`` for none.
+
+    A plan's report is composed at its close into the archived landed record the
+    plan's evidence already lives in. Its presence on disk is the whole test: a
+    row links a report only where one was written, and the plan document
+    otherwise, so a member's row never points at a record nobody composed.
+    """
+    path = _evidence_record_path(docs_dir, slug)
+    if not slug or not path.is_file():
+        return ""
+    return f"/{project}/evidence/archive/{path.name}"
 
 
 def _sprint_resource(docs_dir: Path, project: str, sprint_id: Any) -> Any:
@@ -1299,6 +1322,7 @@ def read_sprint_plan_row(docs_dir: Path, project: str, slug: str) -> SprintPlanR
             runs=0,
             worker_seconds=0,
             headline="the sprint names a plan with no document",
+            report_href=_report_href(docs_dir, project, slug),
         )
     source = resource.path.read_text(encoding="utf-8")
     plan = _plan_html.parse_plan(resource.path, slug)
@@ -1331,20 +1355,35 @@ def read_sprint_plan_row(docs_dir: Path, project: str, slug: str) -> SprintPlanR
         ),
         headline=_headline_result(landings, str(plan.get("summary") or "")),
         figures=tuple(figure for landing in landings for figure in landing.figures),
+        report_href=_report_href(docs_dir, project, slug),
     )
 
 
 def _sprint_row(row: SprintPlanRow) -> str:
-    """One table row: the plan, its status, what it landed and its result."""
+    """One table row: the plan, its status, what it landed and its result.
+
+    A row links the plan's evidence report where one exists, and the plan
+    document otherwise. A plan carried out of the closing sprint says so in its
+    status cell, naming the sprint it moved to when the close named one.
+    """
+    href = row.report_href or row.href
     name = (
-        f'<a href="{_escape(row.href)}">{_escape(row.title)}</a>'
-        if row.href
+        f'<a href="{_escape(href)}">{_escape(row.title)}</a>'
+        if href
         else _escape(row.title)
     )
+    if row.carried:
+        status = (
+            f"{row.status}, carried to {row.carried_to}"
+            if row.carried_to
+            else f"{row.status}, carried"
+        )
+    else:
+        status = row.status
     return (
         "      <tr>"
         f"<td>{name}</td>"
-        f"<td>{_escape(row.status)}</td>"
+        f"<td>{_escape(status)}</td>"
         f"<td>{row.sections_landed}</td>"
         f"<td>{row.runs}</td>"
         f"<td>{_format_seconds(row.worker_seconds)}</td>"
@@ -1354,9 +1393,17 @@ def _sprint_row(row: SprintPlanRow) -> str:
 
 
 def render_sprint_page(
-    project: str, sprint_id: str, rows: Sequence[SprintPlanRow]
+    project: str,
+    sprint_id: str,
+    rows: Sequence[SprintPlanRow],
+    theme: str = "",
 ) -> str:
-    """Render one closing page: a row per member plan, its figures, its totals."""
+    """Render one closing page: a row per member plan, its figures, its totals.
+
+    The page names the sprint it closes and the sprint's theme, in its metadata
+    and in its first visible block, so a reader of the record alone knows which
+    sprint it documents and what that sprint set out to do.
+    """
     stem = sprint_page_path(Path("."), sprint_id).stem
     title = f"{sprint_id} — closing sprint"
     sections_landed = sum(row.sections_landed for row in rows)
@@ -1418,11 +1465,18 @@ def render_sprint_page(
             '  <meta name="reckon-type" content="evidence">',
             f'  <meta name="plan-slug" content="{_escape(stem)}">',
             f'  <meta name="plan-title" content="{_escape(title)}">',
+            f'  <meta name="plan-sprint" content="{_escape(sprint_id)}">',
+            f'  <meta name="sprint-theme" content="{_escape(theme)}">',
             f"  <title>{_escape(title)}</title>",
             "</head>",
             "<body>",
             ' <main class="plan-doc">',
             f"  <h1>{_escape(title)}</h1>",
+            (
+                f'  <p class="sprint-theme">Theme: {_escape(theme)}</p>'
+                if theme
+                else '  <p class="sprint-theme">No theme recorded for this sprint.</p>'
+            ),
             f"  <p>What the {len(rows)} plan(s) of this sprint landed, read from "
             "their own closure readings and the runs their ledger holds. Every "
             "link resolves to a document, and every figure is one a landed run "
@@ -1438,20 +1492,76 @@ def render_sprint_page(
     )
 
 
+def _sprint_theme(docs_dir: Path, project: str, sprint_id: str) -> str:
+    """The theme the closing sprint's own resource states, or ``""`` for none.
+
+    The theme is the sprint's own declaration, read from the resource the close
+    just wrote rather than from a second source. A sprint with no theme states
+    none and the page records that it has none.
+    """
+    from reckon import project_state
+
+    try:
+        data, _version = project_state.read_resource(
+            docs_dir, project, "sprint", sprint_id
+        )
+    except project_state.ProjectStateError:
+        return ""
+    return str(data.get("theme") or "").strip()
+
+
+def _carried_sprints(
+    docs_dir: Path, project: str, sprint_id: str
+) -> dict[str, str]:
+    """Map each plan another sprint still lists to that sprint's id.
+
+    A plan carried out of the closing sprint is, after the close, listed by the
+    sprint it advanced to and no longer by the one that closed. Reading the
+    composed membership is what the close itself just wrote, so the page and the
+    sprint resources cannot disagree about where a carried plan went.
+    """
+    from reckon import project_state
+
+    try:
+        composed = project_state.compose_project_state(docs_dir, project)
+    except project_state.ProjectStateError:
+        return {}
+    carried: dict[str, str] = {}
+    for sprint in composed.get("sprints", []):
+        other = str(sprint.get("id") or "")
+        if not other or other == sprint_id:
+            continue
+        for item in sprint.get("items", []):
+            slug = str(item if isinstance(item, str) else item.get("slug") or "")
+            if slug and slug not in carried:
+                carried[slug] = other
+    return carried
+
+
 def write_sprint_page(
     docs_dir: Path, project: str, sprint_id: str, slugs: Sequence[str]
 ) -> Path:
     """Write the closing page for one sprint from its member plans' readings.
 
     A sprint close owes one page, so its failure is the close's failure: a
-    sprint recorded as closed with no page would leave the work unreadable.
+    sprint recorded as closed with no page would leave the work unreadable. The
+    page states the sprint's theme, links each plan to its own evidence report
+    where one exists, and marks a plan still open as carried to the sprint the
+    close moved it to.
     """
-    rows = [read_sprint_plan_row(docs_dir, project, slug) for slug in slugs]
+    theme = _sprint_theme(docs_dir, project, sprint_id)
+    carried = _carried_sprints(docs_dir, project, sprint_id)
+    rows: list[SprintPlanRow] = []
+    for slug in slugs:
+        row = read_sprint_plan_row(docs_dir, project, slug)
+        if row.status not in TERMINAL_STATUSES and row.status != "no plan document":
+            row = replace(row, carried=True, carried_to=carried.get(slug, ""))
+        rows.append(row)
     destination = sprint_page_path(docs_dir, sprint_id)
     destination.parent.mkdir(parents=True, exist_ok=True)
     from reckon._store import write_atomically
 
-    rendered = render_sprint_page(project, sprint_id, rows)
+    rendered = render_sprint_page(project, sprint_id, rows, theme=theme)
     try:
         write_atomically(
             destination,
