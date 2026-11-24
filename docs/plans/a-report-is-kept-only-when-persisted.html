@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling,spa">
   <meta name="plan-after" content="crew-state-stays-bounded">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-report-is-kept-only-when-persisted#s2&quot;,&quot;a-report-is-kept-only-when-persisted#s4&quot;],&quot;s4&quot;:[&quot;a-report-is-kept-only-when-persisted#s2&quot;],&quot;s5&quot;:[&quot;a-report-is-kept-only-when-persisted#s3&quot;,&quot;a-report-is-kept-only-when-persisted#s4&quot;],&quot;s9&quot;:[&quot;a-report-is-kept-only-when-persisted#s8&quot;],&quot;s10&quot;:[&quot;a-report-is-kept-only-when-persisted#s8&quot;]}">
   <title>A report is kept only when persisted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="33">
 <meta name="plan-modified" content="2026-11-24">
 </head>
 <body>
@@ -197,7 +197,7 @@
     <p><strong>Negative control.</strong> At the base revision, the third case must fail, with both clauses present in one composed contract.</p>
 
     <h2 id="s8">§8 — A plan's evidence report is written once, at closure, and names its plan and sprint</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>A plan's landed record is the one written account of what its nodes delivered. A reader who opens one has to know which plan it records and which sprint that plan ran in, and should see the figures the nodes drew rather than a paragraph about each. Of the 226 landed records under <code>docs/evidence/archive/</code> on 22 November 2026, all 226 name their plan in metadata, 9 name a sprint, and 59 embed a figure.</p>
     <p><strong>Deliverable.</strong> Closing a plan composes one evidence report for it. The report states the plan it records and the sprint that plan belonged to, each as a link, in its first visible block and in its metadata; it has one row per landed node carrying that node's landing line; and it embeds, under the node's row, every figure the node saved. No evidence report is composed for a plan while it is open.</p>
     <p><strong>Done when.</strong> <code>tests/test_a_closed_plan_has_one_report_naming_its_plan_and_sprint.py</code> passes, covering: closing a plan in sprint S9 with three landed nodes, two of which saved figures, yields one record whose metadata names the plan and the sprint, whose first block links both, which embeds both figures by project-absolute path beneath their nodes' rows, and which <code>reckon audit-doc</code> accepts; a landing on a plan that stays open composes no record; and closing a plan that belongs to no sprint composes the record with the sprint stated as none. The record is written where the plan's landed record already lives, and the composition adds no new refusal. Each arm's log sits under the run directory and carries its revision, its literal command and a closing <code>EXIT=</code> line. Write paths: <code>reckon/project_state.py</code>, <code>reckon/evidence.py</code> and the new test.</p>
@@ -266,7 +266,7 @@
     <div class="r-comment-body"><p>Independent review of r-20261123T164239430306-a-report-is-kept-only-when-persisted-s8 at head 26ff8e87de49 against base 91f8d8d63be0: goal_fidelity 18, evidence 15, scope_discipline 19, durability 18, fit 18, reuse 19, added failures 0, three non-blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261123T164239430306-a-report-is-kept-only-when-persisted-s8" data-who="reckon-build" data-when="2026-11-23T22:19:23Z">
-    <div class="r-comment-body"><p>The report&#x27;s two links now derive from one address rule — the sprint document resolves through the resource path convention and both the plan link and the sprint link go through the evidence module&#x27;s single helper, with the plan-state helper that rebuilt the rule deleted; the open-plan case gained the state it lacked: an append on a plan with no record must create none (63 passed at the repair head, 58 passed at the base, and both controls red).</p></div>
+    <div class="r-comment-body"><p>The report's two links now derive from one address rule — the sprint document resolves through the resource path convention and both the plan link and the sprint link go through the evidence module's single helper, with the plan-state helper that rebuilt the rule deleted; the open-plan case gained the state it lacked: an append on a plan with no record must create none (63 passed at the repair head, 58 passed at the base, and both controls red).</p></div>
 </div>
 </section>
 </main>
