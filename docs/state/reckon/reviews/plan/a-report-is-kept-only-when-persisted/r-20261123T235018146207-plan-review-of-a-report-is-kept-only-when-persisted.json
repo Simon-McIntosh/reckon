@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T23:51:16Z",
+  "findings": [
+    {
+      "anchor": "a-report-is-kept-only-when-persisted.html#s10",
+      "id": "done_when-1",
+      "reason": "the plan must name the result field and its two values (composed / not composed), or the case measures silence rather than the guard.",
+      "text": "the third done-when case (\"the close's own result says no report was composed when one failed\") cannot fail as written, because no close result reports composition at all: `mcp_edit_plan` builds its success result from `version`, `path`, `provenance` and `warnings`, and a *successful* composition is not reported as composed either, so a test of \"not reported as composed\" passes on a result that is silent \u2014 the deliverable's second clause likewise asks the close to \"not report\" something it never reports",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "a-report-is-kept-only-when-persisted.html#s10",
+      "id": "evidence_paths-1",
+      "reason": "the plan's whole subject is that an unpersisted item is not kept; a failure record with no declared durable path repeats that defect, and naming the durable location changes the deliverable and its cases.",
+      "text": "the deliverable requires that a failed composition \"leaves the close recorded together with a record of the failure, naming the plan and the error\", but \u00a710 declares no durable location for that failure record (it names only where the base and head gate logs sit), so a node can satisfy the done-when by writing the record to a node-local scratch path and the record is lost",
+      "type": "evidence_paths",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "70b981330719c6d301cc9f24f9cb1270482f785b",
+  "plan_fingerprint": "04ae5a42a00c720ca7e77b39b1ec1f635e80d3beba71d87d209cda2068df5242",
+  "plan_slug": "a-report-is-kept-only-when-persisted",
+  "plan_version": 29,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261123T235018146207-plan-review-of-a-report-is-kept-only-when-persisted",
+  "reviewed_blob_sha": "231991531c08856cea25936ac791e82424d3e910",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited review id resolves to the review record kept under the reviewed run's `review-records/` (`r-20261123T164239430306-a-report-is-kept-only-when-persisted-s8.at-26ff8e87de49bd0224d3bb1e3995ca8c2ea715dd.json`), and its text carries the exact finding \u00a710 attributes to it.",
+    "done_when": "a finding \u2014 \u00a710's third case asks the close's own result to say no report was composed, but no close result carries a composition field, so as written the case can pass on a result that says nothing.",
+    "evidence_paths": "a finding \u2014 \u00a710 fixes only where the gate logs live; the failure record itself has no declared durable location.",
+    "naming": "pass \u2014 \u00a710 names no symbol, file or ticket number in code; the section number is the plan's own structure, and the prose states the mechanism.",
+    "reasoning": "pass \u2014 the cited defect reproduces: `reckon/_store.py` at \u00a78's head (`26ff8e87de4`) calls `evidence.compose_closed_plan_report` after the plan write and catches only `(evidence.EvidenceSynthesisError, OSError)`, so any other exception escapes after the plan file is committed; the root cause matches the cited review and the endpoint is reachable and checkable.",
+    "single_goal": "pass \u2014 \u00a710 names one deliverable: make a failed close composition record its failure while leaving the close committed, with the \"not reported as composed\" clause part of the same failure path.",
+    "wiring": "pass \u2014 `_document` declares `s10` -> `s8` in `plan-section-depends-on`, `s8` exists, and `s10` appears in `plan-section-declarations`; the failure-record work has no other unmet dependency."
+  },
+  "section_digests": {
+    "_document": "756ec4eaf078769d8993ea528b67040967eee175e329107e29029ec93a89eecd",
+    "s1": "ee47fe5018715e3fb4b9e9312fa9f5edd9cb7704d33128b5fb7faff903354379",
+    "s10": "953d845dafa553e1f724807b4badf9e918feff8bd24b01f1be6fa99144f586e2",
+    "s2": "9396d7300c138b3407fc2803876606122442333cef7e2724797bf8da6d1fe47c",
+    "s3": "c87823744a63909821eae7b0be527c1d07f3add90ec9aaaec1ed327978197387",
+    "s4": "0135c54654765e34c225b2005ed6c7260ffcd2724f3222ebf808142a3e452e49",
+    "s5": "ea0c5f9bc3e471e0925d285043420f83f16fd469b2f4c95e1f12610224366cef",
+    "s6": "6c471b14972a42e0101dac6f6557f756abdebee752fe914375756de57c03b742",
+    "s7": "038663d5d93759e7305e472f2bc3eba15c8afb4b27c9b27b5f1c48201758c8ff",
+    "s8": "2f83ef1d6d95623619a92a03b54e49558ccb9be404f7eefa8206c9180fdade49",
+    "s9": "f48cb23f1968981b30bcc5b2250e01a93b777cd3fdef279dd04dc3a8623710d4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T00:00:54.760700+00:00",
+  "total": null
+}
