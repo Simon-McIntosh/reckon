@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="230">
+<meta name="plan-version" content="231">
 <meta name="plan-modified" content="2026-11-24">
 </head>
 <body>
@@ -1148,6 +1148,9 @@
 </div>
 <div class="r-comment" data-section="s68" data-id="c-run-r-20261124T011635590150-review-of-delivered-work-lands-without-a-coordinator-s68-2709301dac39" data-who="reckon-build" data-when="2026-11-24T01:55:01.792Z">
     <div class="r-comment-body"><p>Reviewed §68 at head 2709301d against base 37bcd910; the sweep, its holder check and its three wiring points are present and the head arm adds zero failures against the base arm, with three non-blocking findings — the wiring has no asserting test (durability 11), sweep_this_node_arm_trees is dead code, and the reviewed manifest's gate_scope_note misnames the delivered head.</p></div>
+</div>
+<div class="r-comment" data-section="s68" data-id="c-run-r-20261124T000134383473-delivered-work-lands-without-a-coordinator-s68" data-who="reckon-build" data-when="2026-11-24T01:10:02.544Z">
+    <div class="r-comment-body"><p>A partitioned landing arm&#x27;s tree is now removed once its last activity is older than the partition&#x27;s time limit and no live process holds it, on every node the lander places a job on: each job sweeps at its start and an arm that ended without running its release gets a sweep sent to its node to begin when the limit has passed. Each removal is recorded with node, path and bytes; a tree a process holds or one younger than the limit is kept.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-11-17T04:25:00Z">
     <div class="r-comment-body"><p>§7 landed by direct merge (head <code>7d7dbacbe4</code>), on the lead's instruction. Reviewed heads that merge cleanly with a moved primary branch are measured and published as one candidate, and a head that conflicts, including one that meets a new conflict after it was queued, is returned to the worktree that produced it as a repair round. First review 108 of 120 with one blocking finding on a queued group meeting a later conflict, repaired; re-review 120 of 120. Merged candidate gate: 19 passed in 49.68s.</p></div>
