@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-or-its-job-cannot-overwrite-shared-files-landed">
+  <meta name="plan-title" content="A worker or its job cannot overwrite shared files — landed evidence">
+  <meta name="plan-summary" content="Each section's landing record, with the measure that decided it.">
+  <meta name="plan-evidence-for" content="a-worker-or-its-job-cannot-overwrite-shared-files">
+  <meta name="plan-verifies" content="a-worker-or-its-job-cannot-overwrite-shared-files#s10">
+  <meta name="plan-commits" content="efb4b7ed,0388ce623c">
+  <meta name="plan-artifacts" content="reckon/_worker_fence.py,reckon/nested_launch.py,reckon/host_shims/sbatch,reckon/host_shims/srun,reckon/crew/fleet_supervisor.py,docs/figures/a-worker-or-its-job-cannot-overwrite-shared-files/a-worker-or-its-job-cannot-overwrite-shared-files-s10/census.svg">
+  <meta name="plan-recorded-at" content="2026-11-24">
+  <meta name="plan-verdict" content="failed">
+  <meta name="plan-environment" content="all_debug allocations on 98dci4-clu-3141 and 98dci4-clu-3143, product fence composed by reckon/_worker_fence.py at efb4b7ed, decoy environments under the run directory, no installed interpreter and no real environment targeted">
+  <meta name="plan-tags" content="fence,worker,scheduler,symlink,census,supervisor,evidence">
+  <title>A worker or its job cannot overwrite shared files — landed evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence</p>
+      <h1>A worker or its job cannot overwrite shared files</h1>
+      <p class="lead">One cumulative record: each section appends its own anchor, with the measure that decided it.</p>
+    </header>
+
+    <section id="s10">
+      <h2>&sect;10 &mdash; Shown on the fleet: the incident's call fails and the fleet survives a dead supervisor</h2>
+      <p><strong>Outcome &mdash; four arms hold and the census arm fails, so this section stays open.</strong>
+      A dispatched worker replayed the incident's three-argument call at a decoy chain of the
+      incident's own depth, directly, through <code>sbatch</code>, through <code>srun</code> and by
+      the scheduler binary's absolute path: the wrapper's redirect was refused in all four and the
+      decoy interpreter was byte-identical afterwards. The same redirect at a decoy in a directory
+      the fence grants writable was refused by the file's own mode (<code>0555</code>,
+      <code>Permission denied</code>) while a <code>0755</code> neighbour in the same directory was
+      written, which attributes the refusal to the permission rather than to the fence. The fleet
+      health series read zero writable interpreters on every sample of the last 24 hours. An
+      <code>all_debug</code> allocation outlived two <code>SIGKILL</code>s of the supervisor it
+      started, restarting it with the product's own backoff and leaving its stand-in descendant and
+      its queue state intact.</p>
+      <p>The census arm does not hold. Over the 200 run directories created after the composed gate
+      command landed (<code>0388ce623c</code>, 2026-11-17T09:12:31Z) 11.0&nbsp;% hold a
+      worker-written shell script that invokes a test gate, and 13.5&nbsp;% hold a worker-written
+      script of any kind, against 5.0&nbsp;% and 7.0&nbsp;% in the 200 before it. The section asks
+      for under 5&nbsp;%. Two instruments were run because the original census tool is not
+      recoverable &mdash; its run directory was pruned by retention &mdash; and neither reproduces
+      the section's 43-of-200 (21.5&nbsp;%) baseline, so the baseline's rule cannot be re-derived
+      from the record. What is measured here is measured under a stated rule, and both rules put the
+      after-window above the before-window and above the bound.</p>
+
+      <table>
+        <thead><tr><th>Arm</th><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>A &mdash; the incident's call, three routes</td><td>decoy interpreter's size, mtime and sha256 before and after; the wrapper's own stderr</td><td><strong>holds</strong>: unchanged in all four routes, redirect refused <code>Read-only file system</code></td></tr>
+          <tr><td>B &mdash; refused by the file's own permission</td><td>identical redirects at a <code>0555</code> and a <code>0755</code> decoy in one granted directory, plus a plain write in that directory</td><td><strong>holds</strong>: <code>Permission denied</code> at 0555, written at 0755, grant control written</td></tr>
+          <tr><td>C &mdash; health series, 24 hours</td><td>every <code>writable_interpreters</code> reading in the 24&nbsp;h ending 2026-11-24T08:44:10Z</td><td><strong>holds</strong>: 1,169 samples, 1,166 read <code>0</code>, 3 read <code>unknown</code>, none read above zero</td></tr>
+          <tr><td>D &mdash; allocation outlives its supervisor</td><td>two <code>SIGKILL</code>s of the supervisor inside one <code>all_debug</code> job; starts, descendant liveness, queue state</td><td><strong>holds</strong>: 3 starts, descendant alive after both kills, queue <code>RUNNING</code> at every sample (job <code>1343953</code>)</td></tr>
+          <tr><td>E &mdash; census of worker-written gate wrappers</td><td>200 run directories each side of <code>0388ce623c</code>, two rules, three depths</td><td><strong>fails</strong>: 11.0&nbsp;% and 13.5&nbsp;% after, 5.0&nbsp;% and 7.0&nbsp;% before, bound 5&nbsp;%</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Arm A &mdash; the incident's call through every route a dispatched worker takes</h3>
+      <p>The decoy chain has the incident's depth and nothing else of it. A worktree
+      <code>.venv</code> is the final symlink, whose directory holds a symlink to
+      <code>python3</code>, which symlinks to a decoy interpreter under a decoy install tree, with
+      no interpreter of the account's and no environment of the project's behind it. The call is
+      the incident's three-argument one, issued by a shell gate wrapper the worker wrote in its own
+      run directory:</p>
+      <pre><code>/bin/sh run/gate.sh gate command worktree/.venv/bin/python</code></pre>
+      <p>where the wrapper does <code>log="$3"</code> and then
+      <code>printf "replacement gate log\n" &gt; "$log"</code> &mdash; the argument shuffle that
+      writes a "log" onto the interpreter. Each arm composed the fence with the product's own
+      <code>reckon._worker_fence.fence_argv</code>, the call
+      <code>_backends.launch_plan</code> makes for a fresh dispatch, a resume and a redispatch, with
+      the run directory, the worktree and a scratch directory as the writable grants. One
+      <code>all_debug</code> job (<code>1343880</code>, 14&nbsp;s) ran all four arms; its own
+      <code>sbatch</code> and <code>srun</code> arms submitted their own jobs
+      (<code>1343881</code>, <code>1343883</code>).</p>
+      <table>
+        <thead><tr><th>Route</th><th>Task exit</th><th>What the task's stderr says</th><th>Decoy before &rarr; after</th></tr></thead>
+        <tbody>
+          <tr><td>direct, inside the fence</td><td>1</td><td><code>gate.sh: line 3: .../.venv/bin/python: Read-only file system</code></td><td>36&nbsp;B, <code>6aeeb26c&hellip;</code> &mdash; identical</td></tr>
+          <tr><td>through <code>sbatch</code></td><td>1</td><td>same refusal, in the job's own output file</td><td>identical</td></tr>
+          <tr><td>through <code>srun</code></td><td>1</td><td>same refusal</td><td>identical</td></tr>
+          <tr><td>through <code>/usr/bin/sbatch</code></td><td>1</td><td>same refusal; the shim reports <em>task re-enters the worker fence; this is the shim, reached by name or by absolute path</em></td><td>identical</td></tr>
+        </tbody>
+      </table>
+      <p>The identity is compared on size, nanosecond modification time and sha256, and all three are
+      equal in every row. Two details belong in the record because they qualify what the rows mean.
+      The <code>srun</code> arm created no scheduler step: the shim re-entered the worker fence, so
+      <code>sacct -j 1343880</code> lists only the batch and extern steps, and the call was refused
+      in the fenced context the shim composed rather than in a step of its own. The absolute-path
+      arm reached the shim, not a bare binary, because the fence binds the scheduler's absolute
+      path to the shim &mdash; the same shield &sect;15 landed, shown here doing its job from a
+      worker's own call.</p>
+
+      <h3>Arm B &mdash; the file's own permission, apart from the fence</h3>
+      <p>Inside a fence whose writable grants include the directory, two decoys of one shape were
+      created and the identical wrapper redirected onto each by absolute path
+      (job <code>1343916</code>, 1&nbsp;s):</p>
+      <table>
+        <thead><tr><th>Target</th><th>Mode</th><th>Task exit</th><th>Stderr</th><th>File after</th></tr></thead>
+        <tbody>
+          <tr><td>decoy interpreter</td><td><code>0555</code></td><td>1</td><td><code>Permission denied</code></td><td>unchanged (58&nbsp;B, same sha256 and mtime)</td></tr>
+          <tr><td>same shape, writable</td><td><code>0755</code></td><td>0</td><td>empty</td><td>replaced, 21&nbsp;B, new sha256</td></tr>
+          <tr><td>plain write in that directory</td><td>&mdash;</td><td>0</td><td>empty</td><td>probe file written</td></tr>
+        </tbody>
+      </table>
+      <p>The writable neighbour and the grant control are what make the refusal attributable. A
+      refusal alone would leave open that the directory was not writable; a <code>0755</code> file
+      in the same directory written by the same fenced task closes that, so the
+      <code>0555</code> refusal is the file's mode and nothing else.</p>
+
+      <h3>Arm C &mdash; the health series reads zero writable interpreters</h3>
+      <p>From <code>~/.local/state/fleet/health/1319168-98dci4-clu-3026.tsv</code>, over the 24
+      hours ending at the last sample (2026-11-24T08:44:10Z): <strong>1,169 samples</strong>,
+      <strong>1,166 reading <code>0</code></strong>, <strong>3 reading <code>unknown</code></strong>
+      (04:27:10Z, 04:30:21Z and 04:35:55Z, where the sampler's own resolution failed and it said so
+      rather than reporting a repair), and <strong>no reading above zero</strong>. The median sample
+      interval is 71&nbsp;s and the largest gap 569&nbsp;s, so the window has no stretch long enough
+      to hide a day of repair. <code>scheduler_running</code> reads <code>-</code> on all 1,169
+      samples, which is the field's marker for an unreadable scheduler rather than a count.</p>
+
+      <h3>Arm D &mdash; an allocation outliving the supervisor it started</h3>
+      <p>An <code>all_debug</code> job (<code>1343953</code>, 46&nbsp;s, node
+      <code>98dci4-clu-3141</code>) ran the <em>product's own</em> hold script &mdash;
+      <code>fleet_node.generate_hold_script(fleet_size({}), &hellip;)</code> with its submission
+      headers removed because it ran as the job's batch step &mdash; and a replaceable Python
+      supervisor at <code>$HOME/.local/bin/fleet-supervisor</code> that spawns one stand-in
+      descendant and then sleeps. The supervisor was killed with <code>SIGKILL</code> twice, at
+      different points in its backoff, and the hold was read after each:</p>
+      <table>
+        <thead><tr><th>Quantity</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>supervisor starts</td><td>3</td></tr>
+          <tr><td>exits recorded by the hold</td><td><code>exited (137); restart in 5s</code>, then <code>exited (137); restart in 10s</code></td></tr>
+          <tr><td>stand-in descendant (pid 29)</td><td>alive after both kills</td></tr>
+          <tr><td>queue state, before the first kill and after each kill</td><td><code>RUNNING</code> at all three samples</td></tr>
+        </tbody>
+      </table>
+      <p>The backoff is the product's, read from <code>fleet_supervisor.shell_backoff_transition()</code>
+      rather than restated here, and it is the hold shell, not Python, that keeps the allocation:
+      the job's queue state never leaves <code>RUNNING</code> although the process holding the
+      sessions is replaced twice.</p>
+      <p><strong>What this arm does not measure, and why.</strong> The gated rehearsal in
+      <code>tests/test_sessions_outlive_the_supervisor.py</code> additionally asserts a live
+      <code>srun</code> step beside the descendant, and that half cannot run from inside a worker
+      fence. Two attempts record the boundary. Job <code>1343897</code> submitted from inside a
+      fenced worker: its supervisor's <code>srun --overlap</code> re-entered the fence (the log
+      carries the shim's notice), the step's stand-in never acquired the name the probe reads, and
+      the supervisor failed its own stand-in check. Job <code>1343928</code> submitted with the
+      fence environment scrubbed: the shim refused the submission outright and the test never
+      started. Both are the shield working as designed &mdash; a worker cannot buy an unfenced
+      allocation by submitting one &mdash; and they are why this arm measures the allocation's
+      survival with the descendant stand-in and reports the missing step half as an open item rather
+      than as a pass.</p>
+
+      <h3>Arm E &mdash; the census, and the route that got through</h3>
+      <figure>
+        <img src="/reckon/figures/a-worker-or-its-job-cannot-overwrite-shared-files/a-worker-or-its-job-cannot-overwrite-shared-files-s10/census.svg"
+             alt="Four bar pairs: gate wrappers at the top level 5.0 % before and 11.0 % after the landing; gate wrappers to depth 2, 5.5 % and 15.5 %; any script at the top level, 7.0 % and 13.5 %; any script to depth 2, 9.5 % and 18.5 %. The section's 5 % bound is a dotted line left of every after value.">
+        <figcaption>Share of the 200 most recent run directories on either side of
+        <code>0388ce623c</code> holding a worker-written shell script. Grey is the 200 runs before
+        the landing, green the 200 after it. The narrower rule counts a script that invokes a test
+        gate; the wider one counts any worker-written script. The dotted line is the section's
+        5&nbsp;% bound. No bar pair straddles it in the direction the section asks for.</figcaption>
+      </figure>
+      <p>Population: 2,317 run directories before the landing and 288 after it at the time of the
+      scan; the 200 most recent on each side are read. A run directory counts when a shell script
+      within the stated depth matches a gate verb &mdash; <code>pytest</code>,
+      <code>python -m unittest</code>, <code>ctest</code>, <code>nox</code>, <code>tox</code>,
+      <code>crew verify-gate</code>, <code>crew suite run</code> &mdash; or, under the wider rule,
+      when any shell script exists at all. Depth does not change the count beyond two levels
+      (11.0&nbsp;% at depths 1, 2 and 3 after the landing, 5.0&nbsp;% at depth 1 and 5.5&nbsp;% at
+      depths 2 and 3 before it).</p>
+      <table>
+        <thead><tr><th>Rule</th><th>Before <code>0388ce623c</code></th><th>After it</th><th>Section's bound</th></tr></thead>
+        <tbody>
+          <tr><td>gate-invoking script, top level</td><td>10 of 200 (5.0&nbsp;%)</td><td>22 of 200 (11.0&nbsp;%)</td><td>5&nbsp;%</td></tr>
+          <tr><td>gate-invoking script, depth 2</td><td>11 of 200 (5.5&nbsp;%)</td><td>31 of 200 (15.5&nbsp;%)</td><td>5&nbsp;%</td></tr>
+          <tr><td>any worker-written script, top level</td><td>14 of 200 (7.0&nbsp;%)</td><td>27 of 200 (13.5&nbsp;%)</td><td>5&nbsp;%</td></tr>
+          <tr><td>any worker-written script, depth 2</td><td>19 of 200 (9.5&nbsp;%)</td><td>37 of 200 (18.5&nbsp;%)</td><td>5&nbsp;%</td></tr>
+        </tbody>
+      </table>
+      <p>The route that got through is not exotic. The wrappers remaining after the landing are
+      mostly base-versus-head measurement arms, written by dispatched workers of other plans, and
+      they are the incident's shape almost exactly: a script the worker wrote that invokes
+      <code>pytest</code> itself. Representative paths, all under run directories created after
+      <code>0388ce623c</code>:</p>
+      <ul>
+        <li><code>r-20261124T053023988163-a-report-is-kept-only-when-persisted-s10/arm-base.sh</code> and <code>&hellip;/arm-head.sh</code></li>
+        <li><code>r-20261123T190235235854-delivered-work-lands-without-a-coordinator-s66/gate_base.sh</code> and <code>&hellip;/gate_head.sh</code></li>
+        <li><code>r-20261123T185306999650-a-read-costs-what-changed-s39/all-debug-gate.sh</code></li>
+        <li><code>r-20261123T173056929818-delivered-work-lands-without-a-coordinator-s63/gate-run.sh</code> and <code>&hellip;/importer-run.sh</code></li>
+        <li><code>r-20261123T154753064396-west-chain-readiness-s6/run-gate-solver.sh</code></li>
+      </ul>
+      <p>This record&rsquo;s own run directory holds the four scripts that produced arms A to D, so
+      it is one of the counted directories; that is a property of taking the measure, not an
+      exemption from it. What the arm asks is that a dispatched node gate without writing a wrapper,
+      and after the landing that is still a minority behaviour.</p>
+
+      <h3>What would close the section</h3>
+      <p>Arms A to D need no further work; each is measured here with a job id and a receipt. The
+      section closes when a census holds at under 5&nbsp;% after the landing under a rule stated in
+      advance, and the before-figure it is compared against must be re-measured with that same rule,
+      because the 43-of-200 baseline &sect;10 names cannot be reproduced: the tool that produced it
+      is gone with its run directory, and neither gate-invoking nor any-script counts reach
+      21.5&nbsp;%. The most likely closure is the composed gate command being what workers actually
+      reach for on gate nodes &mdash; the &sect;7 measure &mdash; with this census as its
+      after-the-fact check, rather than a new wrapper-counting instrument.</p>
+
+      <h3>Commands and artifacts</h3>
+      <ul>
+        <li>Arm A: <code>scheduler_arms.py</code> under job <code>1343880</code>; receipts in <code>arms/replay-1343880/receipts.json</code>.</li>
+        <li>Arm B: <code>permission_arms.py</code> under job <code>1343916</code>; receipts in <code>arms/permission-1343916/permission-receipts.json</code>.</li>
+        <li>Arm C: <code>arms/arm-c-health.log</code>, one pass over the TSV above.</li>
+        <li>Arm D: <code>arm-d-hold.sh</code> under job <code>1343953</code>; receipt in <code>arms/hold-1343953/receipt.json</code>.</li>
+        <li>Arm E: <code>wrapper_census2.py</code> under jobs <code>1343925</code> (gate rule) and <code>1343954</code> (any-script rule); reports in <code>arms/wrapper-census2-1343925.json</code> and <code>arms/wrapper-census-any-1343954.json</code>; figure script <code>arms/census_figure.py</code>.</li>
+        <li>Scoped gate: <code>tests/test_shared_environments_are_read_only.py</code> and
+        <code>tests/test_sessions_outlive_the_supervisor.py</code>, scheduler-gated arms
+        excluded, at <code>f584a969aea2</code> &mdash; <code>28 passed, 1 skipped, 5 deselected
+        in 26.21s</code>, <code>EXIT=0</code>, job <code>1343980</code>.</li>
+      </ul>
+      <p>Every job ran in its own <code>all_debug</code> allocation. No arm targeted an installed
+      interpreter or a real environment: the decoys are under
+      <code>~/.config/reckon/crew/runs/&lt;run&gt;/arms/</code>, and the arm that replaces an
+      interpreter replaces the decoy copy in the granted scratch directory.</p>
+    </section>
+  </main>
+</body>
+</html>
