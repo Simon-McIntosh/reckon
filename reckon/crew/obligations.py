@@ -5529,12 +5529,23 @@ def _obligations_view(
     if review_holds:
         from reckon.crew import plan_review
 
+        recorded_by_owner: dict[str, dict[str, dict[str, Any]]] = {}
         for (owner, plan), held in review_holds.items():
             started = [
                 parse_utc((pointer.get("queue_hold") or {}).get("started_at"))
                 for pointer in held
             ]
             ages = [int((now - moment).total_seconds()) for moment in started if moment]
+            # Why the reflex could not compose the review this request waits
+            # on, when it has recorded one: a unit at its review cap, or an
+            # unanswered finding with its id. The row names it beside the
+            # remedy so the owner reads why the review is still owed rather
+            # than only that it is.
+            recorded = recorded_by_owner.get(owner)
+            if recorded is None:
+                recorded = plan_review._reflex_obligations(owner)
+                recorded_by_owner[owner] = recorded
+            obligation = recorded.get(plan) or {}
             items.append(
                 {
                     "kind": "plan-review-owed",
@@ -5543,6 +5554,11 @@ def _obligations_view(
                     "held_count": len(held),
                     "age_seconds": min(ages) if ages else 0,
                     "reason": queue_admission.PLAN_REVIEW_HELD_REASON,
+                    "review_obligation": str(obligation.get("reason") or ""),
+                    "finding_ids": [
+                        str(finding_id)
+                        for finding_id in (obligation.get("finding_ids") or [])
+                    ],
                     "next_command": plan_review.review_invocation(
                         owner, plan, session=session
                     ),
