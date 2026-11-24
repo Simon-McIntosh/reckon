@@ -1,0 +1,25 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-23T23:54:19Z",
+  "findings": [],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained commit dd5b11ff makes the impl guard read a section's declaration through the dispatch owner in reckon/crew/promotion_checks.py:2496-2506, replacing the local copy while preserving the last-node-lands-and-moves-impl behaviour, and 3541462f updates the evidence fragment; the scoped gate reads 7 passed.\nVERDICT done_when: the done_when names tests/test_landing_a_sections_last_node_moves_impl.py with the three landing cases (lone node :169, open sibling :189, refused landing :292); scoped-gate-round4.log records 7 passed in 5.52s at dd5b11ffeb and negative-control.log records 2 failed, 1 passed at 31eda5cd1f.\nVERDICT write_paths: git diff --stat 09a5538303..3541462f names exactly three paths \u2014 reckon/crew/promotion_checks.py, tests/test_landing_a_sections_last_node_moves_impl.py, docs/evidence/fragments/queued-work-needs-no-workaround/qwnw-a-last-node-landing-moves-impl.html \u2014 every one inside the node's declared write paths.\nVERDICT manifest: read; it records the scoped gate 7 passed in 5.52s at dd5b11ffeb, the concurrency suite 41 passed, the base arm 58 passed at 31eda5cd1f, the head arm 65 passed at dd5b11ffeb, and the delegation/mapping controls; every named log exists and its summary line matches the claim.\nVERDICT diff: read the two commits gained since the prior review at 09a5538303 commit by commit; dd5b11ff extracts _plan_root_for_run, deletes the local _section_declaration, and calls reckon/crew/dispatching/measurement._section_declaration with the project, plan, plan root and section; 3541462f updates the evidence fragment accordingly.\nCALL_SITES: reckon/crew/promotion.py:1338, reckon/crew/promotion.py:2926, reckon/crew/promotion_checks.py:_landing_preconditions, reckon/crew/dispatching/measurement.py:90\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_checks.py:2501-2506 now delegates the declaration read to reckon/crew/dispatching/measurement.py:22 while keeping the section-open exemption at :2506, so the last node of a section still lands and moves impl.\nSCORE evidence: 18\nJUSTIFICATION evidence: scoped-gate-round4.log records 7 passed in 5.52s at dd5b11ffeb, arm-base.log 58 passed and arm-head-repair3.log 65 passed both EXIT=0, and the delegation controls redden 1 failed 6 deselected.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 09a5538303..3541462f touches only promotion_checks.py, the test file and the evidence fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: delegation-control.log reddens test_the_impl_guard_reads_the_declaration_through_the_dispatch_owner when the delegation hunk is reverted, and delegation-control2.log reddens it when a local lookup replaces the owner call.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion_checks.py:2247-2265 adds a documented private helper in the module's own idiom, and no added name or comment carries a plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/promotion_checks.py:2496-2506 now extends the owner at reckon/crew/dispatching/measurement.py:22 rather than duplicating it, and the local copy the prior review flagged is deleted.\n",
+  "review_run_id": "r-20261123T235349672631-review-of-qwnw-a-last-node-landing-moves-impl-3541462f572f",
+  "reviewed_base_sha": "31eda5cd1f4e52346def5d1d484bd1c9f4de514d",
+  "reviewed_head_sha": "3541462f572f5c84b257a9dcc02b18a9ff5eb236",
+  "reviewed_run_id": "r-20261123T182815880028-qwnw-a-last-node-landing-moves-impl",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T00:13:50.442161+00:00",
+  "total": 113
+}
