@@ -25,7 +25,7 @@
   <title>Delivered Work Lands Without A Coordinator | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="216">
+<meta name="plan-version" content="217">
 <meta name="plan-modified" content="2026-11-24">
 </head>
 <body>
@@ -1111,6 +1111,9 @@
 </div>
 <div class="r-comment" data-section="s65" data-id="c-run-r-20261123T232344628212-review-of-delivered-work-lands-without-a-coordinator-s65-6f8da1cd634b" data-who="reckon-build" data-when="2026-11-23T23:31:39.014Z">
     <div class="r-comment-body"><p>independent review of r-20261123T190232214274-delivered-work-lands-without-a-coordinator-s65 at head 6f8da1cd634bacedf9a05607af2d90e969f5a57f: scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 16, fit 19, reuse 15; added_failure_count 1 (one flaky threading id the manifest argues does not reproduce); two non-blocking findings; no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s65" data-id="c-run-r-20261123T190232214274-delivered-work-lands-without-a-coordinator-s65" data-who="reckon-build" data-when="2026-11-23T23:13:10.137Z">
+    <div class="r-comment-body"><p>a partitioned landing arm now judges a test file&#x27;s presence against its own revision — the base arm&#x27;s command leaves out a file the base revision does not hold and records it as absent there, a partitioned base arm left with no file is recorded as an empty baseline (its command, a zero exit status and an empty id list, which adds no base ids) rather than as an arm that did not run, an unresolvable revision keeps the file so the arm reports its own failure, and an unpartitioned measurement still reads presence from its local trees; new test 3 passed; base arm at d7f54a14d1 on all_debug 9 failed / 411 passed EXIT=1, head arm at 6be79c28ce 10 failed / 413 passed EXIT=1 with the same nine ids plus one threading id that does not reproduce, negative control 2 failed / 1 passed EXIT=1 at the base source.</p></div>
 </div>
 <div class="r-comment" data-section="s66" data-id="c-run-r-20261124T002046932935-review-of-delivered-work-lands-without-a-coordinator-s66-9be3a4435869" data-who="reckon-build" data-when="2026-11-24T00:32:39.907Z">
     <div class="r-comment-body"><p>Independent review of r-20261123T190235235854-delivered-work-lands-without-a-coordinator-s66 at base d7f54a14d1dcf7ae8054acd61fbf1a2e20d0425e and head 9be3a443586949f5a8db7ffe82d9b3af648d33cd: six SCORE lines (goal 19, evidence 16, scope 19, durability 18, fit 19, reuse 17; total 108), added_failure_count 0, three non-blocking findings, status parsed.</p></div>
