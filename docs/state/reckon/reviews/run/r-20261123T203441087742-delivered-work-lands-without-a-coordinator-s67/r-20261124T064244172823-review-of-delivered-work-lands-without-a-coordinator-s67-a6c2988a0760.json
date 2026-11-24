@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1319",
+    "reckon/crew/promotion_records.py:1381",
+    "reckon/crew/promotion_gate.py:1368",
+    "reckon/crew/landing_measure.py:264",
+    "reckon/crew/queue_landing.py:801",
+    "reckon/crew/queue_landing.py:823"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T06:43:37Z",
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": 122,
+      "severity": "non-blocking",
+      "summary": "_STORAGE_FAILURE matches storage phrases case-insensitively against every line of an arm's output, so a genuine test failure whose own message names one is read as the node's disk and its real failure ids are discarded; tests/test_ledger_write_keeps_run_files.py:253 raises OSError(errno.ENOSPC, 'No space left on device'), so such a message is reachable in this repository's own arms. Scope the match to pytest's setup-error and tree-extraction line shapes. Carried from the prior review's finding 1, which the coordinator folded into delivered-work-lands-without-a-coordinator-s71."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": 604,
+      "severity": "non-blocking",
+      "summary": "The new environmental branch for a guard containing ' arm could not run on ', and the sibling branch at reckon/crew/landing_measure.py:2296 in armed_observations, have no test anywhere under tests/ (grep for 'could not run on' in tests/ hits only the new fixture's comment), so a regression that deleted either would leave the suite green and a storage refusal would be held as a finding about the code instead of retried."
+    },
+    {
+      "file": "docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s67.html",
+      "line": 36,
+      "severity": "non-blocking",
+      "summary": "The live-reproduction paragraph says the first two gate submissions are 'kept under the run directory' and quotes their arm-log readings ('no tests ran', 'EXIT=4'; '9 failures and 36 errors'), but no retained file supports either: logs/sbatch-gate2.log holds only tar 'No space left on device' lines, logs/sbatch-gate3.log is 319 bytes of fence and tmpfs lines with no pytest output, and the reviewed run's own manifest calls these 'arms lost to full compute-node /tmp'. Cite the retained receipts only, or say the arm logs were removed on the node."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T203441087742-delivered-work-lands-without-a-coordinator-s67/manifest.md",
+      "line": 21,
+      "severity": "non-blocking",
+      "summary": "The artifacts line cites logs/head-newtest.log as '4 passed in 1.73s locally' while that file reads '1 failed in 2.45s' and was written before the fix commit 4d42346e22; the green evidence is ~/.cache/reckon-portfolio/arms/s67-head-newtest.log (4 passed in 2.53s), outside the run directory. Carried from the prior review's finding 0, which the coordinator exempted on that external log; the misquote itself remains in the manifest."
+    }
+  ],
+  "justifications": {
+    "durability": "The retry/naming assertions in tests/test_a_full_disk_is_not_a_test_failure.py:155-207 redden if the storage branch is removed (base arm: 4 failed), yet reckon/crew/queue_landing.py:604 and reckon/crew/landing_measure.py:2296 carry the same judgement with no test at all.",
+    "evidence": "The two gate arms at d7f54a14 and 5b013e015a carry identical 11-id failure sets (sorted diff empty), but the done_when's named test is absent from both arm commands (grep count 0 in each log) and logs/head-newtest.log is a pre-fix red run.",
+    "fit": "ruff check on the three changed files at head reports 'All checks passed', and the added names (storage_failure, arm_node, exclude_nodes, storage_retry) describe mechanism with no plan, sprint or ticket label.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:1983-1993 names the arm's node and reads no test ids from a storage-failing arm, which is the goal verbatim.",
+    "reuse": "No storage classifier exists under reckon/ at head (git grep for 'no space left on device', 'ENOSPC', 'disk quota exceeded' hits only the new pattern), and exclude_nodes extends partition_submission/_partition_runner rather than forking them.",
+    "scope_discipline": "git diff --stat d7f54a14..996de76011 lists only the evidence fragment, reckon/crew/landing_measure.py, reckon/crew/queue_landing.py and tests/test_a_full_disk_is_not_a_test_failure.py, every one of them a declared write path."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261124T064244172823-review-of-delivered-work-lands-without-a-coordinator-s67-a6c2988a0760",
+  "reviewed_base_sha": "d7f54a14d1dcf7ae8054acd61fbf1a2e20d0425e",
+  "reviewed_head_sha": "a6c2988a0760dada63099effcad7f81ba1587261",
+  "reviewed_run_id": "r-20261123T203441087742-delivered-work-lands-without-a-coordinator-s67",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T06:54:57.012222+00:00",
+  "total": 107,
+  "verdicts": {
+    "diff": "Read commit by commit against d7f54a14: 4d42346e22 adds the storage classifier, Arm.node/storage_failure, Measurement.storage_node/storage_retry, the exclude_nodes plumbing and the environmental branch; 5b013e015a names eighteen distinct files in the fixture; 12936c291a and 996de76011 add the evidence fragment; a6c2988a is a clean merge of main that keeps every added symbol and behaviour.",
+    "done_when": "The done_when names tests/test_a_full_disk_is_not_a_test_failure.py covering three cases; all four of its cases exist and pass at head a6c2988a (re-run here: 4 passed in 1.40s) and fail at base d7f54a14 (4 failed in 0.81s), but the file is in neither gate-arm command and the run's own green log is a stale red, so the pass is recorded outside the run directory.",
+    "goal": "The node's goal is that a full disk on an arm's node is not a test failure; reckon/crew/landing_measure.py:551 classifies the storage line, :1248 suppresses the arm's failing ids, and :1983 breaks the judged-arm loop naming the node, delivering exactly that.",
+    "manifest": "Read; it records base d7f54a14 and head 5b013e015a arms at 11 failed / 597 passed each, names the gate and negative-control logs, and its artifacts line cites logs/head-newtest.log as a green run where logs/head-newtest.log reads '1 failed in 2.45s'.",
+    "write_paths": "The manifest declares five paths; the node's own four commits touch the evidence fragment, reckon/crew/landing_measure.py, reckon/crew/queue_landing.py and the test file, all inside them, and the remaining 108 paths in d7f54a14..a6c2988a come from the merge of main, not from this node."
+  }
+}
