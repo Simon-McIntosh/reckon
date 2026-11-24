@@ -2244,6 +2244,26 @@ def _plan_impl_from_state(state: Any) -> float | None:
         return None
 
 
+def _plan_root_for_run(
+    record: Mapping[str, Any], *, fallback_root: str | Path | None
+) -> str | Path | None:
+    """The repository holding the plan this run was dispatched against.
+
+    The authority's plan repository is preferred over the ledger checkout — a
+    caller may point ``--checkout-path`` at another tree. The impl comparison
+    and the declaration lookup both resolve their plan through this one root,
+    so a promotion cannot read a declaration from one tree and an impl from
+    another.
+    """
+    root: str | Path | None = fallback_root
+    authority = record.get("authority")
+    if isinstance(authority, Mapping):
+        plan_authority = authority.get("plan")
+        if isinstance(plan_authority, Mapping) and plan_authority.get("repository"):
+            root = str(plan_authority["repository"])
+    return root
+
+
 def _plan_state_for_run(
     record: Mapping[str, Any], *, fallback_root: str | Path | None
 ) -> dict[str, Any]:
@@ -2257,12 +2277,7 @@ def _plan_state_for_run(
     plan = str((record.get("node") or {}).get("plan") or "")
     if not project or not plan:
         return {}
-    root: str | Path | None = fallback_root
-    authority = record.get("authority")
-    if isinstance(authority, Mapping):
-        plan_authority = authority.get("plan")
-        if isinstance(plan_authority, Mapping) and plan_authority.get("repository"):
-            root = str(plan_authority["repository"])
+    root = _plan_root_for_run(record, fallback_root=fallback_root)
     try:
         state, _version = _store.read_plan(project, plan, root, artifact_type="plan")
     except (OSError, ValueError, _store.OpError):
@@ -2387,6 +2402,7 @@ def _require_impl_moved(
     failure_classification: str,
     no_impl_change: str,
     plan_state: Mapping[str, Any],
+    plan_repo: str | Path | None = None,
 ) -> dict[str, Any]:
     """Compare the plan's impl at promotion against the value at dispatch.
 
@@ -2469,6 +2485,28 @@ def _require_impl_moved(
         return check
     if current != recorded_value:
         check["verdict"] = "moved"
+        return check
+    # A section's impl moves when its declaration moves, and the declaration
+    # moves at landing: the last open node of a section closes it, so its impl
+    # moves as that landing is written rather than before the check reads. A
+    # node that leaves siblings open cannot move impl either, and lands with the
+    # section still implementable. Both therefore land without an override; a
+    # section already declared done, or a plan run naming no section, is still
+    # held to the movement this check exists to require.
+    from reckon.crew.dispatching.measurement import (
+        _section_declaration as _dispatch_section_declaration,
+    )
+
+    project = str(record.get("project") or "")
+    declared = _dispatch_section_declaration(
+        project,
+        plan,
+        repo=plan_repo,
+        section=str(node.get("section") or record.get("section") or ""),
+    )
+    if declared == "implementable":
+        check["verdict"] = "section-open"
+        check["reason"] = "section-implementable"
         return check
     if str(no_impl_change).strip():
         check["verdict"] = "waived"
@@ -3110,6 +3148,7 @@ def _landing_preconditions(
         )
     )
     plan_state = _plan_state_for_run(record, fallback_root=ledger_root)
+    plan_repo = _plan_root_for_run(record, fallback_root=ledger_root)
     _ok, brief_owner = attempt(
         lambda: _require_brief_owner(
             run_id, record, plan_link=plan_link, unplanned_reason=unplanned_reason
@@ -3123,6 +3162,7 @@ def _landing_preconditions(
             failure_classification=failure_classification,
             no_impl_change=no_impl_change,
             plan_state=plan_state,
+            plan_repo=plan_repo,
         )
     )
     attempt(lambda: _require_no_undisposed_blocking_figure_finding(run_id, record))

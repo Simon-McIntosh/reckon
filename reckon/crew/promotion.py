@@ -3565,6 +3565,22 @@ def _complete_locked(
             )
         )
 
+        # The landing's own plan write is committed, so a section whose last
+        # node this run is records done. It is recorded here rather than inside
+        # that write: a refused landing never reaches this step and so records
+        # no declaration, and a declaration a coordinator wrote while the
+        # landing was in flight is not rolled back with the landing's comment.
+        from reckon.crew.promotion_scope import _close_a_landed_section
+
+        section_closure = _close_a_landed_section(
+            project=project,
+            plan=str(node.get("plan") or ""),
+            section=str(node.get("section") or ""),
+            run_id=run_id,
+            checkout=checkout,
+            verdict=str(gate).strip().lower(),
+        )
+
         # Return capture metadata while the pointer still exists. Session
         # ownership has already been copied onto the committed ledger row.
         _stop_at_stage_boundary("the release")
@@ -3622,6 +3638,7 @@ def _complete_locked(
             "already_promoted": already_promoted,
             "stacked_descendants": stacked_descendants_still_live(record),
             "session_capture": capture,
+            "plan_closure": section_closure,
             "plan_comment": comment,
             "release": release,
             "store": store_outcome,

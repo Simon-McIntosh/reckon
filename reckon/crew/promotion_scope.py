@@ -25,7 +25,7 @@ from reckon import (
     ledger,
     shadow_reads,
 )
-from reckon._plan_html import _strip_tags, section_anchor
+from reckon._plan_html import _strip_tags, section_anchor, section_record_id
 from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew.node import (
     STALL_BUDGET_MULTIPLE,
@@ -61,6 +61,7 @@ from reckon.crew.runs import (
     list_live,
     run_dir,
 )
+from reckon.evidence import EXECUTABLE_SECTION_ROLES
 
 _ZERO_COUNT = re.compile(r"0+")
 _BRANCH_WRITES: ContextVar[dict | None] = ContextVar("promotion_branch_writes", default=None)
@@ -1572,6 +1573,148 @@ def _worker_authored_landing_record(
         tree, "show", f"{revisions[-1]}:{'/'.join(relative.parts)}", check=False
     )
     return shown.returncode == 0 and f'data-id="{comment_id}"' in shown.stdout
+
+
+def _section_identity(value: object) -> str:
+    """The one identity every spelling of a plan section resolves to."""
+    return section_record_id(str(value or "").strip())
+
+
+def _landing_closes_its_section(
+    *, project: str, plan: str, section: str, run_id: str
+) -> bool:
+    """Whether this landing is the last open node of its plan section.
+
+    A section's impl moves when its declaration moves to ``done``, and a
+    coordinator declares it done after its last node lands — so the landing
+    that should move impl is the one that can record the declaration. Whether
+    it may is a fact about the fleet, not about this run: the section is
+    closed only when no other open node of it remains.
+
+    An open node is another executable run of the same plan section that is
+    queued, waiting for its upstream, working, or delivered and unlanded; that
+    question is owned by ``pending_landing.nodes_awaiting_landing``, which also
+    excludes a pointer serving this dispatch node, so a sibling pointer for the
+    same node is not a second node. The run's own pointer is what proves it is
+    one of the section's nodes at all: a run whose pointer is already gone
+    closes nothing, so a re-promotion cannot re-declare a section a coordinator
+    has since reopened.
+    """
+    from reckon.crew.pending_landing import nodes_awaiting_landing
+
+    if not (project and plan and section and run_id):
+        return False
+    wanted = _section_identity(section)
+    try:
+        pointers = list_live(project=project)
+    except (OSError, ValueError):
+        return False
+    own_node_id = ""
+    ours = False
+    for pointer in pointers:
+        if not isinstance(pointer, Mapping):
+            continue
+        if str(pointer.get("run_id") or "") != run_id:
+            continue
+        node = pointer.get("node")
+        node = node if isinstance(node, Mapping) else {}
+        role = str(node.get("role") or pointer.get("role") or "implement")
+        if role not in EXECUTABLE_SECTION_ROLES:
+            continue
+        if str(node.get("plan") or pointer.get("plan") or "") != plan:
+            continue
+        if _section_identity(node.get("section") or pointer.get("section")) != wanted:
+            continue
+        ours = True
+        own_node_id = str(node.get("id") or "")
+        break
+    if not ours:
+        return False
+    return not nodes_awaiting_landing(
+        project, plan, section, node_id=own_node_id, run_id=run_id
+    )
+
+
+def _close_a_landed_section(
+    *,
+    project: str,
+    plan: str,
+    section: str,
+    run_id: str,
+    checkout: Path,
+    verdict: str,
+) -> dict[str, Any]:
+    """Record the landed run's section done now that its landing has committed.
+
+    The declaration is written after the landing's own commit rather than
+    inside it. A landing's plan write is rolled back when the landing is
+    refused, and a declaration carried in that write is byte-identical to the
+    one a coordinator's own declaration write produces — rolling it back would
+    take the coordinator's accepted write with it, and keeping it would leave a
+    refused landing having recorded a declaration. Writing it after the commit
+    removes the plan write from that collision: a refused landing writes no
+    declaration because it never reaches this step, and a coordinator who wrote
+    the declaration while the landing was in flight keeps it.
+
+    The write goes through the same edit surface a coordinator uses, so it
+    passes the ordinary version check and records the receipt a later landing
+    reads, and it is committed as its own commit naming the run.
+    """
+    from reckon.mcp_edit_plan import _edit_plan
+
+    if not (project and plan and section and run_id):
+        return {"closed": False, "reason": "no_section"}
+    if not _landing_closes_its_section(
+        project=project, plan=plan, section=section, run_id=run_id
+    ):
+        return {"closed": False, "reason": "section_still_open"}
+    try:
+        state, version = _store.read_plan(project, plan, checkout, artifact_type="plan")
+    except (OSError, ValueError):
+        return {"closed": False, "reason": "plan_unreadable"}
+    wanted = _section_identity(section)
+    declarations = state.get("section_declarations")
+    key = ""
+    if isinstance(declarations, Mapping):
+        for candidate, value in declarations.items():
+            if _section_identity(candidate) != wanted:
+                continue
+            key = str(candidate)
+            if str(value or "").strip().lower() != "implementable":
+                return {"closed": False, "reason": "not_implementable"}
+            break
+    if not key:
+        return {"closed": False, "reason": "no_declaration"}
+    try:
+        _edit_plan(
+            project,
+            plan,
+            [{"op": "set", "path": f"section_declarations.{key}", "value": "done"}],
+            version,
+            checkout_path=str(checkout),
+        )
+    except (OSError, ValueError) as exc:
+        return {"closed": False, "reason": f"write refused: {exc}"}
+    path = _store._resolve_html_file(project, plan, checkout, artifact_type="plan")
+    try:
+        commit = _commit_landing_writes(
+            run_id=run_id,
+            verdict=verdict,
+            checkout=checkout,
+            paths=[path],
+            subject=f"close({run_id}): section {key} done",
+            body=(
+                "Record the section done once its last node's landing has "
+                "committed, so the plan's impl moves with the run that closed it."
+            ),
+        )
+    except CrewError as exc:
+        return {"closed": True, "committed": False, "reason": str(exc)}
+    return {
+        "closed": True,
+        "section": key,
+        "committed": bool(commit.get("committed")),
+    }
 
 
 def _landing_comment_update(

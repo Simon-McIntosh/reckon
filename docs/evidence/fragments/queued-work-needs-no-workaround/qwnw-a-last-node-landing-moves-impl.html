@@ -1,0 +1,132 @@
+<section id="qwnw-a-last-node-landing-moves-impl-landing">
+  <h2>Landing a section's last node records the section done</h2>
+
+  <p><strong>What changed.</strong> A plan's impl moves only when a section's
+  declaration moves, so a landing that did not write a declaration could never
+  move impl — and the promotion's own guard then refused with
+  <code>impl did not move</code> for the movement the landing was about to make.
+  Two reviewed runs hit that on 2026-11-23 and both needed
+  <code>--no-impl-change</code> with a reason that said exactly this.</p>
+
+  <p><code>reckon/crew/promotion_scope.py</code> decides, once per landing,
+  whether the run landing is the last open node of its section: an open node is
+  another executable run of the same plan section that is queued, waiting for
+  its upstream, working, or delivered and unlanded, asked of
+  <code>pending_landing.nodes_awaiting_landing</code> so the phase filter and
+  the same-node exclusion are the owner's rather than a second copy, and this
+  run's own pointer must be present, so a re-promotion cannot
+  re-declare a section a coordinator has since reopened. When it is the last,
+  the section is recorded done <em>after</em> the landing's own plan comment has
+  committed, through the same edit surface a coordinator uses, and committed as
+  its own commit naming the run, so the plan's derived impl advances with the
+  run that closed the section. <code>reckon/crew/promotion_checks.py</code> stops
+  refusing an implement or test run whose own section still reads implementable,
+  because a section's impl cannot move until its last node lands; a plan run
+  naming no section, or a section already declared done, is still held to the
+  movement the guard exists to require.</p>
+
+  <p>Recording the declaration after the commit is what lets both guarantees
+  hold at once. Section 48 requires that a refused landing record no
+  declaration, and section 41 requires that a state write accepted after staging
+  survives a refused landing. A declaration carried inside the landing's staged
+  plan write makes the landing's bytes identical to the declaration write a
+  coordinator makes for the same section, so the refused landing's rollback
+  cannot tell them apart: it either takes the coordinator's accepted write with
+  it or leaves a refused landing having recorded a declaration. After the commit
+  there is no staged plan write to roll back, so a refused landing writes no
+  declaration, and a coordinator who wrote the declaration while the landing was
+  in flight keeps it. A run that leaves siblings open records nothing, so impl
+  does not move and no override is recorded.</p>
+
+  <p>An earlier attempt at <code>bba1d13a7a</code> wrote the closure inside the
+  landing's own staged plan write instead, and the declaration-set axes of the
+  concurrency measure failed there: <code>2 failed, 5 passed, 34 deselected in
+  10.43s</code>. That is the state this ordering replaces.</p>
+
+  <p>A closure that cannot be written or committed after the landing has
+  committed is reported in the promotion's receipt (<code>plan_closure</code>)
+  rather than raised: the code has already landed by then, and the missing
+  declaration is a plan repair the coordinator can see.</p>
+
+  <h3 id="qwnw-a-last-node-landing-moves-impl-measured">Measured</h3>
+
+  <p>The gate is
+  <code>tests/test_landing_a_sections_last_node_moves_impl.py</code>: seven
+  cases against a temporary two-section plan driven through the project's real
+  <code>crew complete</code> for the landing cases, plus the declaration and
+  delegation cases that read the guard's own answer. The landing cases are the
+  only node of an implementable section, which
+  reads back with the section done in both the declaration map and the typed
+  record and with impl moving from 0.5 to 1.0; one of two nodes, which lands
+  with the section still implementable, impl still 0.5, and the sibling's
+  pointer untouched; and a last node whose landing is refused by the gate-check
+  precondition, which leaves the declaration map and impl exactly as before.
+  The scoped gate reads <code>7 passed in 5.52s</code> at
+  <code>dd5b11ffeb</code>.</p>
+
+  <p>The concurrency measure is unchanged and passes again:
+  <code>tests/test_every_landed_state_write_survives_a_promotion.py</code> reads
+  <code>41 passed in 47.01s</code> at <code>dd5b11ffeb</code>.</p>
+
+  <p>The negative control extracts the unchanged base revision into a scratch
+  tree and runs the same file there: the first case is refused with
+  <code>impl did not move: 0.5 at dispatch and 0.5 at completion</code>, and the
+  sibling case with the same wording, reading
+  <code>2 failed, 1 passed in 1.24s</code> at <code>31eda5cd1f4e</code>. The
+  third case passes there, because it expects a refusal.</p>
+
+  <p>Two further cases hold the open-node question to the predicate its owner
+  already states. A sibling pointer in a terminal phase — a run that stopped or
+  failed without landing — is not an open node, so the landing still closes the
+  section and impl moves. A second pointer serving the landing's own dispatch
+  node is not a second node either. Both would have held the section open when
+  the closure counted any other executable pointer, leaving impl unmoved for a
+  landing that is the section's last. The scoped gate, now six cases, is
+  measured again below.</p>
+
+  <p>The impl guard asks a section's declaration of the dispatch path's own
+  reader, <code>dispatching/measurement._section_declaration</code>, passing the
+  project, the plan, the repository the run was dispatched against and the
+  section the node holds. That reader already resolves a section through the
+  ledger's normal form and unwraps a declaration written as a status mapping,
+  so the guard holds no second copy of either rule. The plan root the impl
+  comparison resolves is computed once and given to both reads, so a promotion
+  cannot read a declaration from one tree and an impl from another. Two cases
+  pin this: one reads a status-mapping declaration through the owner, and one
+  records that the guard passes its repository and section through and takes
+  the owner's <code>implementable</code> answer as the section-open exemption.
+  The sibling case requires the <code>section-open</code> verdict rather than
+  accepting its absence, so a guard that skips the exemption instead of reading
+  the declaration fails the test.</p>
+
+  <p>The before and after arms ran on the <code>all_debug</code> partition,
+  excluding the nodes whose <code>/tmp</code> is full. The baseline arm reads
+  <code>58 passed in 47.50s</code> at <code>31eda5cd1f4e</code>; the after arm
+  reads <code>65 passed in 43.38s</code> at <code>dd5b11ffeb</code>. Neither arm
+  records a failure id.</p>
+
+  <p>The delegation is held by a control that reverts the answering commit's
+  <code>promotion_checks.py</code> hunk in a scratch tree of the same head. Run
+  against the delegation case it fails, reading
+  <code>1 failed, 6 deselected in 0.42s</code> at <code>dd5b11ffeb</code>,
+  because the guard no longer accepts the repository it reads the declaration
+  through. A second control keeps that parameter and restores a local lookup
+  over the plan state: the same case fails there as well, reading
+  <code>1 failed, 6 deselected in 0.45s</code>, because the local read answers
+  nothing where the owner answers <code>implementable</code>, so the run is
+  refused with <code>impl did not move</code> instead of landing on the
+  owner's answer.</p>
+
+  <p>Reverting the repair's own hunk in a scratch tree of the same head and
+  running the two cases it adds reads
+  <code>2 failed, 3 deselected in 5.17s</code> at <code>f1577fdd19f</code>: the
+  section stays open and impl stays at 0.5 without the repair. Reverting the
+  declaration read the same way reads
+  <code>1 failed, 5 deselected in 0.46s</code> at <code>5b5fdafd80</code>: a
+  declaration written as a status mapping reads back as its text, so the
+  section-open exemption cannot fire for it.</p>
+
+  <p>Revisions: the change is committed at <code>dd5b11ffeb</code>, following
+  <code>09a5538303</code>, and the base revision the arms compare against is
+  <code>31eda5cd1f4e</code>.</p>
+</section>
