@@ -62,7 +62,7 @@
     the shape §2 prescribes for a finished plan that should stay open.
   </p>
 
-  <h3 id="a-finished-plan-closes-s6-handoff">The 16 finished plans that need their owners</h3>
+  <h3 id="a-finished-plan-closes-s6-handoff">The finished plans that need their owners</h3>
   <p id="a-finished-plan-closes-s6-handoff-note">
     Each row names the project that owns the plan and the ops its own
     <code>closure_blockers</code> already offer. This node runs no close: a
@@ -81,6 +81,7 @@
       <tr><td>nova</td><td><code>dd-cocos-ingest</code></td><td>in-progress</td><td>close, resolve</td><td><code>f-ddc-007</code></td></tr>
       <tr><td>nova</td><td><code>dual-branch-selection</code></td><td>active</td><td>close</td><td></td></tr>
       <tr><td>nova</td><td><code>iter-passive-plasma-circuit</code></td><td>in-progress</td><td>close, resolve</td><td><code>f-ippc-004</code></td></tr>
+      <tr><td>nova</td><td><code>separatrix-spline-extraction</code></td><td>active</td><td>close, resolve</td><td><code>f-sse-dissent-polish-termination</code>, <code>f-sse-diiid-descent-direction</code>, <code>f-20260910T060721501697</code>, <code>f-sse-polish-exit-pattern-measurement</code></td></tr>
       <tr><td>reckon</td><td><code>a-review-dies-where-nobody-is-looking</code></td><td>active</td><td>close, resolve</td><td><code>f-ardwnil-005</code></td></tr>
       <tr><td>reckon</td><td><code>authoring-exemplar</code></td><td>draft</td><td>close</td><td></td></tr>
       <tr><td>reckon</td><td><code>dispatch-admission-and-landing-take-seconds</code></td><td>active</td><td>close, resolve</td><td><code>f-daalts-001</code>, <code>f-daalts-s28</code></td></tr>
@@ -92,7 +93,12 @@
     </tbody>
   </table>
   <p id="a-finished-plan-closes-s6-counts">
-    By project: reckon 8, nova 3, imas-codex 2, imas-efit 2, imas-ambix 1.
+    By project: reckon 8, nova 4, imas-codex 2, imas-efit 2, imas-ambix 1.
+  </p>
+  <p id="a-finished-plan-closes-s6-drift">
+    <code>nova:separatrix-spline-extraction</code> became finished after the
+    2026-11-23 head arm and appears in the 2026-11-24 pair below; it carries
+    four open followups and the close op.
   </p>
 
   <h3 id="a-finished-plan-closes-s6-instrument">The instrument and its control</h3>
@@ -103,8 +109,10 @@
     §4 and §5 payload. Each row is classified by one function into
     <code>violation</code>, <code>stated</code>,
     <code>blocked-on-finished-gate</code>, or <code>not-finished</code>
-    (terminal, deferred or incomplete). The script and its full census output
-    live in the run directory, not the repository.
+    (terminal, deferred or incomplete). The script is embedded in this record
+    below, so the measure is reproducible from the repository: extract the
+    <code>pre</code> block to a file and run it with the revision's tree on
+    <code>PYTHONPATH</code>.
   </p>
   <p id="a-finished-plan-closes-s6-control">
     The classifier's control is five constructed rows, run as
@@ -119,12 +127,265 @@
     <code>open-work-is-capped</code> is the passing stated case, and 27
     deferred-only and 182 still holds are excluded.
   </p>
+  <p id="a-finished-plan-closes-s6-control-log">
+    The persisted self-check log reads
+    <code>ok closable-unclosed, ok stated-open, ok deferred-only, ok closed,
+    ok blocked-on-finished-gate</code> and exits 0. It is not green by default:
+    disabling the <em>blocked-on-finished-gate</em> branch of
+    <code>classify()</code> and re-running the same five rows reddens that row
+    (<code>want=blocked-on-finished-gate got=violation</code>) and exits 1.
+  </p>
+  <p id="a-finished-plan-closes-s6-base-arm">
+    The control arm the measure requires is a census run at the base revision
+    <code>893e18cc82</code>. It was run from a <code>git archive</code> of that
+    revision rather than from the worktree, and reads the same live mounts as
+    the head arm. Its summary line reads
+    <code>mounts=19 plans_scanned=226</code> and
+    <code>finished_open=18 violations=17 stated=1 blocked_on_finished_gate=0
+    errors=0</code>, with <code>terminal=0 deferred=27 incomplete=181</code>
+    excluded. It differs from the head arm's first reading by one mount and one
+    plan (<code>nova:separatrix-spline-extraction</code>, four followups and the
+    close op), because a mount was added to the mount set between the two runs
+    and the plan finished in between, and the census scans mounted plan
+    documents, not their history. So the head arm was re-run on the same corpus
+    in this repair, and it reads <em>the same line as the base arm</em>:
+    <code>mounts=19 plans_scanned=226</code> and
+    <code>finished_open=18 violations=17 stated=1 blocked_on_finished_gate=0
+    errors=0</code>. That agreement is what a control over a docs-only change
+    should show: the classifier's verdict does not depend on the revision it
+    runs from. §1's 21-plan reading is a measurement of live state and cannot be
+    re-created from a commit, so neither arm reproduces that historical figure;
+    both report the corpus as it stands at run time.
+  </p>
+
+  <h3 id="a-finished-plan-closes-s6-script-heading">The census script</h3>
+  <p id="a-finished-plan-closes-s6-script-note">
+    The committed instrument, verbatim. Save the block to
+    <code>census_closable.py</code> and run it with the target revision's tree on
+    <code>PYTHONPATH</code> and as the working directory:
+    <code>PYTHONPATH=&lt;tree&gt; python census_closable.py</code> for the census,
+    or <code>--self-check</code> for the five-row classifier control. The
+    output path is set at the top of the script.
+  </p>
+  <pre id="a-finished-plan-closes-s6-script">&quot;&quot;&quot;Re-run the finished-plan census with the closable readiness.
+
+Two questions, both across every mounted project:
+
+  A. Is any plan at 100 % that is neither closed nor holding a plan-terminal
+     gate whose measure states why it stays open? A plan whose only open
+     sections are deferred is visibly not at 100 % — the deferred remainder is
+     the surface&#x27;s own label — so it is not counted here.
+  B. Does any plan read ``blocked`` on a gate whose every gated section is
+     resolved, i.e. a gate over finished work holding the plan?
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path.cwd()))
+
+from reckon import metadata_index  # noqa: E402
+from reckon.doccheck import _load_mounts  # noqa: E402
+from reckon.lifecycle import TERMINAL_STATUSES  # noqa: E402
+from reckon.mcp import _roadmap  # noqa: E402
+
+OUT = Path(
+    &quot;/home/ITER/mcintos/.config/reckon/crew/runs/&quot;
+    &quot;r-20261123T163803959609-a-finished-plan-closes-s6/census-out/census.json&quot;)
+
+
+def _plan_terminal_gates(blockers):
+    return [
+        b
+        for b in blockers
+        if b.get(&quot;kind&quot;) == &quot;gate&quot;
+        and str(b.get(&quot;transition&quot;) or &quot;plan-terminal&quot;) == &quot;plan-terminal&quot;
+        and str(b.get(&quot;measure&quot;) or &quot;&quot;).strip() and &quot;resolve&quot; not in (b.get(&quot;ops&quot;) or [])
+    ]
+
+
+def classify(plan: dict) -&gt; dict:
+    &quot;&quot;&quot;Classify one roadmap row against the section&#x27;s two census questions.
+
+    Returns a dict with ``kind`` taken from ``not-finished``, ``violation``,
+    ``stated`` or ``blocked-on-finished-gate``, so a caller counts and names
+    the rows without re-deriving the predicate.
+    &quot;&quot;&quot;
+
+    status = str(plan.get(&quot;status&quot;) or &quot;&quot;).strip().lower()
+    if status in TERMINAL_STATUSES:
+        return {&quot;kind&quot;: &quot;not-finished&quot;, &quot;reason&quot;: &quot;terminal&quot;}
+    readiness = str(plan.get(&quot;readiness&quot;) or &quot;&quot;)
+    pc = plan.get(&quot;progress_pct&quot;)
+    deferred = plan.get(&quot;deferred_remainder&quot;)
+    blockers = plan.get(&quot;closure_blockers&quot;) or []
+    is_finished = deferred is None and pc == 100.0
+    if is_finished and readiness == &quot;blocked&quot;:
+        return {
+            &quot;kind&quot;: &quot;blocked-on-finished-gate&quot;,
+            &quot;project&quot;: plan.get(&quot;project&quot;),
+            &quot;slug&quot;: plan.get(&quot;slug&quot;),
+            &quot;gates&quot;: [
+                {&quot;id&quot;: g.get(&quot;id&quot;), &quot;gated_sections&quot;: g.get(&quot;gated_sections&quot;)}
+                for g in (
+                    *(plan.get(&quot;gate_blockers&quot;) or []),
+                    *(plan.get(&quot;section_gate_blockers&quot;) or []),
+                )
+            ],
+        }
+    if not is_finished:
+        return {&quot;kind&quot;: &quot;not-finished&quot;,
+                &quot;reason&quot;: &quot;deferred&quot; if deferred else &quot;incomplete&quot;}
+    stated = _plan_terminal_gates(blockers)
+    base = {
+        &quot;project&quot;: plan.get(&quot;project&quot;),
+        &quot;slug&quot;: plan.get(&quot;slug&quot;),
+        &quot;status&quot;: status,
+        &quot;readiness&quot;: readiness,
+        &quot;closure_blockers&quot;: [
+            {&quot;kind&quot;: b.get(&quot;kind&quot;), &quot;id&quot;: b.get(&quot;id&quot;), &quot;ops&quot;: b.get(&quot;ops&quot;)}
+            for b in blockers
+        ],
+        &quot;stated_reason&quot;: [
+            {&quot;id&quot;: b.get(&quot;id&quot;), &quot;measure&quot;: str(b.get(&quot;measure&quot;) or &quot;&quot;)[:140]}
+            for b in stated
+        ],
+    }
+    return {&quot;kind&quot;: &quot;stated&quot; if stated else &quot;violation&quot;, **base}
+
+
+def main() -&gt; int:
+    mounts = _load_mounts()
+    buckets: dict[str, list[dict]] = {
+        &quot;violation&quot;: [], &quot;stated&quot;: [],
+        &quot;blocked-on-finished-gate&quot;: [], &quot;not-finished-terminal&quot;: [],
+        &quot;not-finished-deferred&quot;: [], &quot;not-finished-incomplete&quot;: [],
+    }
+    errors = []
+    scanned = 0
+    with metadata_index.discovery_file_scope():
+        for project in sorted(mounts):
+            try:
+                report = _roadmap(project, None, None, 5)
+            except Exception as exc:  # noqa: BLE001 — one project must not hide the rest
+                errors.append({&quot;project&quot;: project,
+                               &quot;error&quot;: f&quot;{type(exc).__name__}: {exc}&quot;})
+                print(f&quot;ERROR {project}: {type(exc).__name__}: {exc}&quot;, file=sys.stderr)
+                continue
+            if not report.get(&quot;ok&quot;, True):
+                errors.append({&quot;project&quot;: project,
+                               &quot;error&quot;: str(report.get(&quot;detail&quot;))})
+                continue
+            for plan in report.get(&quot;pending_work&quot;) or []:
+                scanned += 1
+                row = dict(plan, project=project)
+                c = classify(row)
+                key = c[&quot;kind&quot;]
+                if key == &quot;not-finished&quot;:
+                    key += &quot;-&quot; + c[&quot;reason&quot;]
+                buckets.setdefault(key, [])
+
+                buckets[key].append(c)
+
+    violations = buckets[&quot;violation&quot;]
+    stated = buckets[&quot;stated&quot;]
+    blocked = buckets[&quot;blocked-on-finished-gate&quot;]
+    payload = {
+        &quot;mounts&quot;: len(mounts),
+        &quot;plans_scanned&quot;: scanned,
+        &quot;finished_open&quot;: len(violations) + len(stated),
+        &quot;finished_stated&quot;: len(stated),
+        &quot;finished_violations&quot;: len(violations),
+        &quot;blocked_on_finished_gate&quot;: len(blocked),
+        &quot;excluded_terminal&quot;: len(buckets[&quot;not-finished-terminal&quot;]),
+        &quot;excluded_deferred&quot;: len(buckets[&quot;not-finished-deferred&quot;]),
+        &quot;excluded_incomplete&quot;: len(buckets[&quot;not-finished-incomplete&quot;]),
+        &quot;errors&quot;: errors,
+        &quot;violations&quot;: violations,
+        &quot;stated&quot;: stated,
+        &quot;blocked_over_finished&quot;: blocked,
+    }
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(json.dumps(payload, indent=1))
+
+    print(f&quot;mounts={len(mounts)} plans_scanned={scanned}&quot;)
+    print(
+        f&quot;finished_open={payload[&#x27;finished_open&#x27;]} &quot;
+        f&quot;violations={len(violations)} stated={len(stated)} &quot;
+        f&quot;blocked_on_finished_gate={len(blocked)} errors={len(errors)}&quot;
+    )
+    print(
+        f&quot;excluded: terminal={payload[&#x27;excluded_terminal&#x27;]} &quot;
+        f&quot;deferred={payload[&#x27;excluded_deferred&#x27;]} &quot;
+        f&quot;incomplete={payload[&#x27;excluded_incomplete&#x27;]}&quot;
+    )
+    for r in sorted(violations, key=lambda x: (x[&quot;project&quot;], str(x[&quot;slug&quot;]))):
+        ops = sorted({op for b in r[&quot;closure_blockers&quot;]
+                      for op in (b.get(&quot;ops&quot;) or [])})
+        print(f&quot;VIOLATION {r[&#x27;project&#x27;]:18s} {str(r[&#x27;slug&#x27;])[:54]:54s} &quot;
+              f&quot;{r[&#x27;status&#x27;]:12s} readiness={r[&#x27;readiness&#x27;]:9s} ops={ops}&quot;)
+    for r in sorted(stated, key=lambda x: (x[&quot;project&quot;], str(x[&quot;slug&quot;]))):
+        print(f&quot;STATED    {r[&#x27;project&#x27;]:18s} declared in {r[&#x27;slug&#x27;]} &quot;
+              f&quot;gate={r[&#x27;stated_reason&#x27;][0][&#x27;id&#x27;]}&quot;)
+    for r in sorted(blocked, key=lambda x: (x[&quot;project&quot;], str(x[&quot;slug&quot;]))):
+        print(f&quot;BLOCKED-ON-FINISHED {r[&#x27;project&#x27;]}:{r[&#x27;slug&#x27;]}&quot;)
+    return 0
+
+
+def self_check() -&gt; int:
+    &quot;&quot;&quot;Prove the predicate fires where it must and stays silent where it must.&quot;&quot;&quot;
+    cases = [
+        (&quot;closable-unclosed&quot;, dict(
+            project=&quot;p&quot;, slug=&quot;a&quot;, status=&quot;active&quot;, readiness=&quot;closable&quot;,
+            progress_pct=100.0, deferred_remainder=None,
+            closure_blockers=[{&quot;kind&quot;: &quot;op&quot;, &quot;ops&quot;: [&quot;close&quot;]}]), &quot;violation&quot;),
+        (&quot;stated-open&quot;, dict(
+            project=&quot;p&quot;, slug=&quot;b&quot;, status=&quot;active&quot;, readiness=&quot;closable&quot;,
+            progress_pct=100.0, deferred_remainder=None,
+            closure_blockers=[
+                {&quot;kind&quot;: &quot;gate&quot;, &quot;id&quot;: &quot;g-keep&quot;, &quot;transition&quot;: &quot;plan-terminal&quot;,
+                 &quot;measure&quot;: &quot;kept open for the December review&quot;},
+                {&quot;kind&quot;: &quot;op&quot;, &quot;ops&quot;: [&quot;close&quot;]}]), &quot;stated&quot;),
+        (&quot;deferred-only&quot;, dict(
+            project=&quot;p&quot;, slug=&quot;c&quot;, status=&quot;active&quot;, readiness=&quot;closable&quot;,
+            progress_pct=100.0,
+            deferred_remainder={&quot;count&quot;: 2},
+            closure_blockers=[{&quot;kind&quot;: &quot;section&quot;, &quot;ops&quot;: [&quot;descope&quot;]}]), &quot;not-finished&quot;),
+        (&quot;closed&quot;, dict(
+            project=&quot;p&quot;, slug=&quot;d&quot;, status=&quot;shipped&quot;, readiness=&quot;closed&quot;,
+            progress_pct=100.0, deferred_remainder=None,
+            closure_blockers=[]), &quot;not-finished&quot;),
+        (&quot;blocked-on-finished-gate&quot;, dict(
+            project=&quot;p&quot;, slug=&quot;e&quot;, status=&quot;active&quot;, readiness=&quot;blocked&quot;,
+            progress_pct=100.0, deferred_remainder=None,
+            closure_blockers=[],
+            section_gate_blockers=[{&quot;id&quot;: &quot;g1&quot;, &quot;gated_sections&quot;: [&quot;s1&quot;]}]),
+         &quot;blocked-on-finished-gate&quot;),
+    ]
+    failed = 0
+    for name, row, want in cases:
+        got = classify(row)[&quot;kind&quot;]
+        ok = got == want
+        print(f&quot;{&#x27;ok &#x27; if ok else &#x27;FAIL&#x27;} {name}: want={want} got={got}&quot;)
+        failed += 0 if ok else 1
+    return 1 if failed else 0
+
+
+if __name__ == &quot;__main__&quot;:
+    if &quot;--self-check&quot; in sys.argv:
+        raise SystemExit(self_check())
+    raise SystemExit(main())</pre>
 
   <p id="a-finished-plan-closes-s6-verdict">
     This node's change is the census record; it moves no product source or
     test. Its measure reports that the section's target is <strong>not yet
-    met</strong>: 16 finished plans across five projects are open with nothing
-    stated. Q2 is met at 0. The 16 are returned to their owning coordinators;
+    met</strong>: the 2026-11-23 arm found 16 finished plans across five
+    projects open with nothing stated, and the 2026-11-24 pair finds 17 (nova's
+    <code>separatrix-spline-extraction</code> having finished in between). Q2 is
+    met at 0 in every arm. The 17 are returned to their owning coordinators;
     closing them is their call, not this node's.
   </p>
 </article>
