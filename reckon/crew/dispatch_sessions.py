@@ -525,17 +525,36 @@ def _apply_orientation_check(
     if check["matched"] is False:
         record["phase"] = "blocked"
         record["detail"] = check["detail"]
-    elif (
+    elif _is_cleared_orientation_detail(record.get("detail"), prior):
+        # A passing check retires the finding an earlier check wrote, whatever
+        # phase the run has since been given: a widened scope or a repaired
+        # echo leaves the run's own status to decide its phase, and a finding
+        # left behind would be read as a live refusal by every later sweep.
+        if record.get("phase") == "blocked":
+            record["phase"] = status
+        record.pop("detail", None)
+
+
+#: How the orientation check's own findings begin, so a passing check can tell
+#: a finding it wrote earlier from a detail another stage recorded.
+_ORIENTATION_DETAIL_PREFIXES = (
+    "committed path outside declared scope:",
+    "orientation mismatch:",
+)
+
+
+def _is_cleared_orientation_detail(detail: Any, prior: Any) -> bool:
+    """Whether a run's detail is an orientation finding a passing check retires."""
+    text = str(detail or "")
+    if not text:
+        return False
+    if (
         isinstance(prior, Mapping)
         and prior.get("matched") is False
-        and record.get("phase") == "blocked"
-        and (
-            record.get("detail") == prior.get("detail")
-            or str(record.get("detail") or "").startswith("orientation mismatch:")
-        )
+        and text == str(prior.get("detail") or "")
     ):
-        record["phase"] = status
-        record.pop("detail", None)
+        return True
+    return text.startswith(_ORIENTATION_DETAIL_PREFIXES)
 
 
 def _record_node_id(record: Mapping[str, Any]) -> str:
