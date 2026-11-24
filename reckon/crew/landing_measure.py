@@ -764,8 +764,42 @@ def _tree_holds(tree: Path, relative: str) -> bool:
         return True
 
 
+def revision_holds(repo: Path, revision: str, relative: str) -> bool:
+    """Whether a revision's own tree holds the file this path names.
+
+    A partitioned arm builds its tree on the node that runs it and has no local
+    checkout to read presence from, and a path that is not there locally is not
+    evidence the revision lacks it. The revision is asked directly, so a file
+    the base revision does not hold is left out of the base arm exactly as a
+    local base tree would have left it out.
+
+    A revision that cannot be read is not evidence of absence either: the file
+    is kept and the arm reports its own failure, rather than the measurement
+    reading as a clean empty scope.
+    """
+    timeout = DEFAULT_MEASURE_TIMEOUT_SECONDS
+    resolved = _git(
+        Path(repo),
+        "rev-parse",
+        "--verify",
+        "--quiet",
+        f"{revision}^{{commit}}",
+        timeout=timeout,
+    )
+    if resolved.returncode:
+        return True
+    held = _git(Path(repo), "cat-file", "-e", f"{revision}:{relative}", timeout=timeout)
+    return held.returncode == 0
+
+
 def arm_test_files(
-    test_files: Iterable[str], *, base_tree: Path, tree: Path
+    test_files: Iterable[str],
+    *,
+    base_tree: Path,
+    tree: Path,
+    base_revision: str = "",
+    head_revision: str = "",
+    repo: Path | None = None,
 ) -> tuple[list[str], list[str], dict[str, list[str]]]:
     """The test files each landing arm runs, and every file left out.
 
@@ -777,15 +811,25 @@ def arm_test_files(
     arm on pytest's unmatched-pathspec error, which reads as an unreadable
     measurement rather than as the file's absence.
 
+    A partitioned arm has no local tree, so its presence is judged against the
+    revision it builds. Naming ``base_revision`` and ``head_revision`` with the
+    ``repo`` they resolve in reads each arm's own revision instead of a tree
+    that is not there, which would otherwise keep every file.
+
     Every file left out is returned with the arms it was left out of, so a
     reader sees what the pair did not measure.
     """
+    by_revision = bool(base_revision and head_revision and repo is not None)
     base: list[str] = []
     head: list[str] = []
     left_out: dict[str, list[str]] = {}
     for relative in test_files:
-        in_base = _tree_holds(base_tree, relative)
-        in_head = _tree_holds(tree, relative)
+        if by_revision:
+            in_base = revision_holds(repo, base_revision, relative)
+            in_head = revision_holds(repo, head_revision, relative)
+        else:
+            in_base = _tree_holds(base_tree, relative)
+            in_head = _tree_holds(tree, relative)
         if in_head:
             head.append(relative)
         if in_base and in_head:
@@ -1627,7 +1671,12 @@ def measure_run(
         runner.partitioned = True
     scoped = _SCOPED_PLACEHOLDER in (command or "")
     base_tests, head_tests, left_out = arm_test_files(
-        node_tests, base_tree=base_tree, tree=tree
+        node_tests,
+        base_tree=base_tree,
+        tree=tree,
+        base_revision=base_sha if partition else "",
+        head_revision=head_sha if partition else "",
+        repo=(repo or tree) if partition else None,
     )
     base_argv = _scoped_arm_argv(command, base_tests, node_tests)
     head_argv = _scoped_arm_argv(command, head_tests, node_tests)
@@ -1667,7 +1716,12 @@ def measure_run(
     # twice reads the same tests twice under one bound. Each arm's own tree
     # decides which importers it runs, exactly as for the node's own files.
     pop_base_tests, pop_head_tests, _population_left_out = arm_test_files(
-        files, base_tree=base_tree, tree=tree
+        files,
+        base_tree=base_tree,
+        tree=tree,
+        base_revision=base_sha if partition else "",
+        head_revision=head_sha if partition else "",
+        repo=(repo or tree) if partition else None,
     )
     pop_base_files = _distinct_files(pop_base_tests, exclude=base_argv)
     pop_head_files = _distinct_files(pop_head_tests, exclude=head_argv)
@@ -1957,7 +2011,12 @@ def armed_observations(
         runner.partitioned = True
     scoped = _SCOPED_PLACEHOLDER in (command or "")
     base_tests, head_tests, left_out = arm_test_files(
-        node_tests, base_tree=base_tree, tree=tree
+        node_tests,
+        base_tree=base_tree,
+        tree=tree,
+        base_revision=base_sha if partition else "",
+        head_revision=head_sha if partition else "",
+        repo=tree if partition else None,
     )
     base_argv = _scoped_arm_argv(command, base_tests, node_tests)
     head_argv = _scoped_arm_argv(command, head_tests, node_tests)
