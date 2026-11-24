@@ -1387,7 +1387,15 @@ def _watcher_delivery_admission(
     Raises :class:`WatcherRequired` for a session that would not hear the run,
     whatever the launch kind, and for any launch kind with no live producer.
     """
-    if launch_kind != "cli":
+    from reckon.crew.dispatch_batch import ADMISSION_SERVICE_SESSION
+
+    if launch_kind != "cli" or session == ADMISSION_SERVICE_SESSION:
+        # A request the admission service filed for a plan no live session
+        # coordinates belongs to no session that could ever arm a follower, so
+        # requiring one refuses it on every pass. Its run is heard the way an
+        # unattended run is: the station's sweep reviews what it delivers and
+        # the lander lands it, both reading the project's producer, which is
+        # the one condition still required here.
         # A launch that is not a session delivery — an in-harness node preparing
         # a directive — has no follower of its own to judge, so the conditions
         # below do not apply to it. The producer does apply: every launch kind
