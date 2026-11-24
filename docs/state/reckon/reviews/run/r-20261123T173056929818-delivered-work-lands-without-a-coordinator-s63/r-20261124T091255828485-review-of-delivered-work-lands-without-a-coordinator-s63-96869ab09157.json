@@ -1,0 +1,110 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 20,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T173056929818-delivered-work-lands-without-a-coordinator-s63/gate-importer-head.log",
+      "revision": "929954a504",
+      "summary": "20 failed, 1303 passed, 2 skipped in 204.08s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 20,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261123T173056929818-delivered-work-lands-without-a-coordinator-s63/gate-importer-base.log",
+      "revision": "4bd2beb1dc",
+      "summary": "20 failed, 1300 passed, 2 skipped in 203.09s"
+    },
+    "derivation": "comm -13 of the reviewed run's sorted failed-importer-base.txt and failed-importer-head.txt is empty (20 head ids == 20 base ids): added_failure_count is 0 and added_failure_ids is empty. The three extra passes at head are this node's new gate test running in its own tree."
+  },
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1312 measure_run",
+    "reckon/crew/queue_landing.py:1529 submit_measurement",
+    "reckon/crew/promotion_records.py:1381 armed_observations",
+    "reckon/crew/review_landing.py:98 _partition_runner",
+    "reckon/crew/standing_suite.py:232 _partition_runner",
+    "reckon/crew/queue_order.py:336 queue_critical_priority",
+    "reckon/flight.py:1927 gate_profiles via _validate_landing",
+    "reckon/crew/landing_measure.py:2797 sweep_arm_trees_entry via arm_sweep_command (job and arm scripts)"
+  ],
+  "completed_at": "",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-delivered-work-lands-without-a-coordinator-s63-96869ab09157",
+      "recorded_at": "2026-11-24T09:32:45.930426+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-24T09:13:12Z",
+  "findings": [
+    {
+      "line": 2693,
+      "path": "reckon/crew/landing_measure.py:2693",
+      "severity": "non-blocking",
+      "text": "sweep_stale_arm_trees re-implements the sweep loop that sweep_abandoned_base_trees (same module, :2602) already owns: iterate the scratch root's children by prefix, skip any a live process holds via _scratch_process_holders, compute tree_size_bytes, rmtree, print and record the removal. The new function adds an age bound and a node field but does not wrap or parameterise the existing owner, so the two loops must be kept in step by hand. Section s71 of the same plan already records that no duplicate sweep helper should remain; this is that duplicate. Non-blocking because both loops are individually correct and unit-tested."
+    },
+    {
+      "line": 2783,
+      "path": "reckon/crew/landing_measure.py:2783",
+      "severity": "non-blocking",
+      "text": "sweep_this_node_arm_trees has no caller anywhere in reckon/ or tests/; the production sweep paths call sweep_stale_arm_trees directly (via arm_sweep_command -> sweep_arm_trees_entry at :2797, and via _partition_runner at :1644). It is dead code that the next reader must open and dismiss. Section s71 names this unused helper as its own to remove. Non-blocking."
+    },
+    {
+      "line": 1644,
+      "path": "reckon/crew/landing_measure.py:1644",
+      "severity": "non-blocking",
+      "text": "The sweep is injected at three places -- the generated measurement-job script (submit_measurement, :244), the per-arm script (_partition_runner, :1644) and the delayed sweep (_submit_delayed_sweep, :1463) -- but tests/test_a_landing_arm_leaves_no_tree.py only exercises sweep_stale_arm_trees and arm_sweep_command directly. No test asserts that any of the three insertion points actually emits the sweep command, so deleting the sweep line from any of them leaves the suite green. This is a durability gap in the gained change; section s71 records the same gap and owns the three wiring tests. Non-blocking because the functions themselves are guarded and the runtime insertion is visible in the generated script."
+    },
+    {
+      "line": 51,
+      "path": "docs/evidence/fragments/delivered-work-lands-without-a-coordinator/delivered-work-lands-without-a-coordinator-s63.html:51",
+      "severity": "non-blocking",
+      "text": "The fragment states the importer arms ran 'on 98dci4-clu-3144 with 18 GB free in its temporary space, which each log records beside its own figures'. The two logs it cites record 19G (gate-importer-base.log) and 17G (gate-importer-head.log); 18G is the figure in gate-suite-base.log, which the sentence is not about. A reader reconciling the claim against the importer logs it names finds a value neither shows. Non-blocking: the node and the environment claim (node with space) are true and the gate figures in the same sentence reconcile exactly with the logs."
+    }
+  ],
+  "incremental": true,
+  "item_verdicts": {
+    "diff": "See verdicts.diff: three files, the fragment plus main's sweep/header/priority code, nothing outside section scope.",
+    "done_when": "See verdicts.done_when: the gate passes at head and reddens at base with the exact negative-control text; the importer pair adds no id.",
+    "goal": "See verdicts.goal: both halves of section s63 survive the merge; the gained code adds main's sweep and priority work without touching the exclusion or setup-failure paths.",
+    "manifest": "See verdicts.manifest: complete and its gates cover the reviewed code revision.",
+    "write_paths": "See verdicts.write_paths: the node's own gained writes are inside the declared paths; the large path set is mainline merge traffic."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_arm_leaves_no_tree.py:53-148 fails if sweep_stale_arm_trees stops removing an old unheld tree or starts removing a held/young/foreign one, but no test at that file or elsewhere asserts the sweep is still emitted into the job script, arm script or delayed submission, so those three wirings can regress silently.",
+    "evidence": "The reviewed run's own gate logs reconcile with the fragment: gate-suite-head.log 61 passed EXIT=0 at 929954a504, gate-suite-base.log 58 passed EXIT=0 at bf5ff985a74a, gate-focused-head.log 25 passed EXIT=0, and the importer pair gives comm -13 empty, though the fragment's 18 GB figure matches neither importer log.",
+    "fit": "The gained code follows the module's idioms--regex header constants at :117-125, a config accessor patterned on queue_max_requests in reckon/flight.py:1419, and a sweep that mirrors the surrounding sweep_abandoned_base_trees--but leaves two near-identical sweep loops and one unused helper beside them.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:1644 keeps the arm-script archive/exclusion path and :1752-1790 keeps the setup-failure naming that section s63 delivers, so the gained commits do not weaken the node's goal.",
+    "reuse": "sweep_stale_arm_trees (reckon/crew/landing_measure.py:2693) duplicates the loop sweep_abandoned_base_trees (:2602) already owns rather than extending it with an age parameter, and sweep_this_node_arm_trees (:2783) is an unused variant.",
+    "scope_discipline": "The node's own gained commits (b0b3079172, b42ffcc31a, 96869ab091) touch only the declared s63 fragment; the rest of the 170-path diff is main's history brought in by merge 929954a504, which the manifest records as reconciliation rather than authored work."
+  },
+  "previous_reviewed_head": "378ec834189a085c02b2728609e62ecb19cf6c20",
+  "project": "reckon",
+  "review_run_id": "r-20261124T091255828485-review-of-delivered-work-lands-without-a-coordinator-s63-96869ab09157",
+  "reviewed_base_sha": "378ec834189a085c02b2728609e62ecb19cf6c20",
+  "reviewed_head_sha": "96869ab09157e1aa058748834b6e44e52853f6c4",
+  "reviewed_run_id": "r-20261123T173056929818-delivered-work-lands-without-a-coordinator-s63",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T09:36:17.766082+00:00",
+  "total": 89,
+  "verdicts": {
+    "diff": "Read the gained commits against 378ec83418: 96869ab091 and b42ffcc31a add the merged-arm paragraph to the s63 fragment, and 929954a504/26f4d085dc/99cf9f0195 merge main's arm-tree sweep, the three-line arm header, revision-local test-file presence and queue critical priority. All three scoped files gained only these; no section s63 behaviour was removed.",
+    "done_when": "The done_when names tests/test_a_partitioned_arm_unpacks_what_it_needs.py. gate-head.log records 3 passed in 1.60s EXIT=0 and gate-base.log records 2 failed, 1 passed EXIT=1 at bf5ff985a74a with the second case reading exactly 'the base arm did not run' (the declared negative control); gate-focused-head.log at 929954a504 records 25 passed in 7.43s over the gate test plus the sweep and header tests, and the importer pair adds no failure.",
+    "goal": "The reviewed node's goal (plan section s63) is that a partitioned arm unpacks only the paths its project excludes and that an arm failing in its own setup is named with its node and error. At the reviewed head reckon/crew/landing_measure.py:_archive_step (948) still takes arm_excluded_paths(config) inside _partition_runner, and the setup-failure branch at :1752-1790 still records host and error text; the gained commits are main's arm-tree sweep (:2602-2810), the three-line _ARM_HEADER (:117-125) that the setup check now reads, and flight.py's queue_critical_priority (:1419-1439), all preserved intact through merge 929954a504.",
+    "manifest": "Read; status complete, ten commits, the gate and importer logs under the run directory, a rubric self-check and the negative-control log named. Its recorded arms were measured at 929954a504 (the code identical to the reviewed head 96869ab09157, whose only delta is the evidence fragment), so the evidence does cover the reviewed code.",
+    "write_paths": "The source node declared five write paths (the s63 fragment, its figure directory, reckon/crew/landing_measure.py, reckon/flight.py, tests/test_a_partitioned_arm_unpacks_what_it_needs.py). The gained commits that author code are merges of main into the branch; the node's own post-review commits (b0b3079172, b42ffcc31a, 96869ab091) touch only the declared s63 fragment, and the wider delivered path set is mainline merge traffic reconciled by 929954a504."
+  }
+}
