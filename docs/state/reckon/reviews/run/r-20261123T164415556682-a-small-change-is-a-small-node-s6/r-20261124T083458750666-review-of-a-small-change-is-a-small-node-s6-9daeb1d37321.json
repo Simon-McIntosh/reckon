@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-24T09:05:00Z",
+  "dispatched_at": "2026-11-24T08:36:16Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html",
+      "line": 53,
+      "severity": "non-blocking",
+      "text": "the prose says the first-week and all-history medians \"agree to within two minutes\", but the quoted 103.5 and 105.9 minutes differ by 2.39, the same prose-versus-raw-output class the repaired commit set out to eliminate, so the reconciliation standard it repaired is not applied to this clause."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the node goal is \"\u00a76 \u2014 Measure the small-change path end to end\"; docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html:1-86 records the median review-record-to-promotion time for repairs of at most 50 changed lines, with sample sizes and a verdict against the 30-minute target, which is the section's deliverable.\nVERDICT done_when: done_when is \"the median is recorded with its sample size, against a target of 30 minutes\"; the fragment records 103.5 min (n=29) at :40, 105.9 min (n=87) at :43, and 109.1 min (n=2 of 145) at :46 against the target at :50-57, and the named raw outputs sec_week.json (median 103.52, n=29), sec_all.json (median 105.91, n=87) and final_all.json (median 109.145, n=2) carry those figures.\nVERDICT write_paths: the declared paths are docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html and docs/figures/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6; git show --stat 9daeb1d373 shows this commit changes only the fragment, and the full delivered diff 3a81cbdd..9daeb1d373 adds only that one path, inside the declared scope, with the figure path unused.\nVERDICT manifest: read; it declares status complete, commits d30752534944 and 9daeb1d373211, tests: none for an unarmed measurement node, and empty baseline_suite/after_suite objects, so the added-failure count below is zero from the run's own declared absence of a comparable suite pair rather than from an unread gate.\nVERDICT diff: read both commits against base 3a81cbdd00f90d500c7c468b54b44b236284ad5a; d30752534944 adds the 84-line fragment, and the re-reviewed delta d30752534944..9daeb1d373211 replaces the unsupported \"29 \u2192 2 small\" cell with \"2 of 145\", states the 145/17/11/2 counters from final_all.json, and corrects the tail from 58.7 h to 59.7 h (3580.5 min), so both prior findings are repaired and no out-of-scope path is touched.\nCALL_SITES: reckon/serve.py:2881 _send_evidence_record, reckon/resources.py:244 _is_evidence_fragment, reckon/compliance.py:105 evidence fragments glob, reckon/evidence.py:867 evidence_fragment_href\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html:50-62 delivers the median, its sample size and the target verdict the goal names, with the proxy nature of the operational reading stated at :83-86.\nSCORE evidence: 18\nJUSTIFICATION evidence: the headline figures reproduce against the run-directory JSON (sec_week.json median 103.52 n=29, sec_all.json median 105.91 n=87, final_all.json 109.145 n=2), and only the \"within two minutes\" claim at :53 disagrees with a 2.39-minute gap.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat and git diff --stat over 3a81cbdd..9daeb1d373 both list only docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html, inside the declared write paths.\nSCORE durability: 7\nJUSTIFICATION durability: the fragment adds no committed test or assertion, and the only guard on its figures is the run-directory reconcile_fragment.py, whose reconcile.log shows FAIL on the pre-fix fragment and PASS on the fixed one, so a committed regression guard still does not exist.\nSCORE fit: 18\nJUSTIFICATION fit: docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html:1-3 follow the section/h2/bold-led-paragraph shape of a peer fragment and every element id at :1, :34, :71 begins with the node id.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module and forks no capability, and a search over reckon/ for a review-to-promotion latency mechanism found only reckon/velocity.py, whose promotion-commit clock the run-directory scripts read rather than reimplement.\nFINDING docs/evidence/fragments/a-small-change-is-a-small-node/a-small-change-is-a-small-node-s6.html:53 non-blocking: the prose says the first-week and all-history medians \"agree to within two minutes\", but the quoted 103.5 and 105.9 minutes differ by 2.39, the same prose-versus-raw-output class the repaired commit set out to eliminate, so the reconciliation standard it repaired is not applied to this clause.",
+  "review_run_id": "r-20261124T083458750666-review-of-a-small-change-is-a-small-node-s6-9daeb1d37321",
+  "reviewed_base_sha": "3a81cbdd00f90d500c7c468b54b44b236284ad5a",
+  "reviewed_head_sha": "9daeb1d373211fa9a4995155afc2e66303941c15",
+  "reviewed_run_id": "r-20261123T164415556682-a-small-change-is-a-small-node-s6",
+  "scores": {
+    "durability": 7,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T09:05:00Z",
+  "total": 101
+}
