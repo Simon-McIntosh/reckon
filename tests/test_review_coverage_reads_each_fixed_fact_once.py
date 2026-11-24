@@ -4,11 +4,10 @@ An admission pass judges whether each queued plan owes a review, and that
 judgement computes the plan's review coverage. On 24 November one coverage
 computation for a large plan took 204 seconds: it walked the plan file's whole
 history once per stored finding to find the commit that added a reviewed blob,
-asked git whether one commit descends from another inside a sort comparator,
-and parsed the same plan bytes once per review that read them. Each of those
-answers is fixed for its inputs, so a later computation reads none of them
-again; a lookup that found nothing is asked again, because the plan may be
-committed later.
+and asked git whether one commit descends from another inside a sort
+comparator. Each of those answers is fixed for its inputs, so a later
+computation reads none of them again; a lookup that found nothing is asked
+again, because the plan may be committed later.
 """
 
 from __future__ import annotations
@@ -32,7 +31,6 @@ class _Asked(list):
 @pytest.fixture(autouse=True)
 def _empty_memos(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(plan_review, "_PLAN_COMMIT_FOR_BLOB", {})
-    monkeypatch.setattr(plan_review, "_PARSED_STATE", {})
     monkeypatch.setattr(plan_review, "_SETTLED_ANCESTRY", {})
 
 
@@ -67,20 +65,6 @@ def test_a_blob_with_no_commit_is_asked_again(located) -> None:
     located.answers["output"] = f"{COMMIT}\n"
     assert plan_review.plan_commit_for("p", "plan", BLOB) == COMMIT
     assert len(located) == 2
-
-
-def test_the_same_plan_bytes_are_parsed_once(monkeypatch: pytest.MonkeyPatch) -> None:
-    parsed: list[str] = []
-
-    def read_state(text: str):
-        parsed.append(text)
-        return {"title": text}
-
-    monkeypatch.setattr(plan_review._plan_html, "read_state", read_state)
-    for _ in range(3):
-        assert plan_review._as_state("<html>one</html>")["title"] == "<html>one</html>"
-    plan_review._as_state("<html>two</html>")
-    assert parsed == ["<html>one</html>", "<html>two</html>"]
 
 
 def test_a_settled_ancestry_answer_is_kept_across_passes(

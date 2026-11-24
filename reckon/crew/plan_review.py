@@ -333,32 +333,12 @@ def _as_state(plan: Mapping[str, Any] | str | Path) -> Mapping[str, Any]:
     if isinstance(plan, Mapping):
         return plan
     if isinstance(plan, Path):
-        return _parsed_state(plan.read_text(encoding="utf-8", errors="replace"))
+        return _plan_html.read_state(plan.read_text(encoding="utf-8", errors="replace"))
     if isinstance(plan, str):
-        return _parsed_state(plan)
+        return _plan_html.read_state(plan)
     raise TypeError(
         f"plan_fingerprint expects a mapping, path or html, got {type(plan)!r}"
     )
-
-
-#: Parsed plan state keyed by a digest of the document text it came from.
-#: Coverage digests every stored review's snapshot of the plan, many of which
-#: are the same bytes, and one parse of a large plan costs about half a second;
-#: the parse of given bytes never changes, so it is done once per process.
-_PARSED_STATE: dict[str, Mapping[str, Any]] = {}
-_PARSED_STATE_LIMIT = 256
-
-
-def _parsed_state(text: str) -> Mapping[str, Any]:
-    """The parsed state of a plan document, parsed once for the same bytes."""
-    key = hashlib.sha256(text.encode("utf-8", "surrogatepass")).hexdigest()
-    state = _PARSED_STATE.get(key)
-    if state is None:
-        state = _plan_html.read_state(text)
-        if len(_PARSED_STATE) >= _PARSED_STATE_LIMIT:
-            _PARSED_STATE.clear()
-        _PARSED_STATE[key] = state
-    return state
 
 
 def _as_document(plan: Mapping[str, Any] | str | Path) -> str | None:
