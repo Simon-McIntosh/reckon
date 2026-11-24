@@ -3847,15 +3847,19 @@ def _run_namings(
 
 def _rows_naming_trees(
     project: str, repository: Path, trees: Iterable[Path]
-) -> list[Mapping[str, Any]]:
+) -> list[Mapping[str, Any]] | None:
     """The stored rows that still name any of ``trees``, one per tree.
 
     A pass that reuses its index files the rows a fresh read screened in, so a
     tree registered after that read has no row filed against it even though the
     store holds one. This asks the store for exactly those trees' rows, which
     is what keeps a new registration a duty without a second whole-ledger read.
-    A reader that cannot answer returns nothing rather than failing the
-    derivation; the tree then joins the held set on the next fresh build.
+
+    ``None`` means the reader failed rather than answering no rows. The caller
+    answers that by leaving those trees uninspected so the next refresh asks
+    again: the empty list a failure would otherwise return is indistinguishable
+    from "no row names this tree", so recording the tree as inspected on it
+    drops the duty for good.
     """
     try:
         from reckon.crew import open_run_index
@@ -3866,7 +3870,7 @@ def _rows_naming_trees(
             project, tuple(sorted(trees)), _ledger_read_root(project, repository)
         )
     except Exception:  # noqa: BLE001 — a screen must never fail the derivation
-        return []
+        return None
 
 
 def _run_file_rows(project: str, repository: Path) -> list[Mapping[str, Any]]:
@@ -4056,14 +4060,20 @@ def _held_records_pass(project: str) -> _RecordedPass:
         return _EMPTY_PASS
     repository = docs_dir.parent.resolve()
     with file_memo.read_only_region():
-        key = (project, str(repository), _held_records_signature(project, repository))
-        if key[2] is None:
+        signature = _held_records_signature(project, repository)
+        if signature is None:
             return _held_worktree_records_read(project, repository)
+        with _HELD_READ_LOCK:
+            previous = _HELD_RECORD_READS.get((project, str(repository)))
+        # A failed row lookup leaves the source signature unchanged, so the
+        # generation keeps its incomplete answer from answering the retry.
+        generation = previous[2].generation if previous is not None else 0
+        key = (project, str(repository), signature, generation)
         # Source identity is stable when unrelated checkout files are created.
         return file_memo.memoized(
             "obligation_held_records",
             Path(__file__),
-            lambda: _held_records_read_uncached(project, repository, key[2]),
+            lambda: _held_records_read_uncached(project, repository, signature),
             variant=key,
         )
 
@@ -4379,6 +4389,12 @@ class _HeldWorktreeState:
         self.inspected: set[Path] = set()
         self.matched: dict[Path, Mapping[str, Any]] = {}
         self.held: dict[Path, Mapping[str, Any]] = {}
+        # Advances when a read could not look up a tree's rows. The published
+        # pass is memoised on its source signature, which a transient store
+        # failure does not move, so the failed answer would be reused until an
+        # unrelated rewrite. The generation is part of that key, so the next
+        # refresh recomputes instead of taking the failed answer.
+        self.generation = 0
 
     def replace(
         self, key: Any, row: Mapping[str, Any] | None, retained: Path | None = None
@@ -4490,6 +4506,7 @@ def _held_worktree_records_read(
             # accounting duty) is told so by ``rows`` being None and asks the
             # writers' own session projection instead.
             return _EMPTY_PASS
+        uninspected: set[Path] = set()
         if previous is None or previous[0] != aggregate_stamp:
             from_store = _namings_answer_from_store(project, repository)
             fresh = _run_namings(project, repository, from_store)
@@ -4592,18 +4609,29 @@ def _held_worktree_records_read(
             # without reading the whole history again.
             new_trees = inspected - index.inspected
             if new_trees:
-                for row in _rows_naming_trees(project, repository, new_trees):
-                    run_id = str(row.get("run_id") or "")
-                    if not run_id or run_id in index.aggregate:
-                        continue
-                    index.extra.add(run_id)
-                    affected.update(
-                        index.replace((1, run_id), row, _retained_worktree(row))
-                    )
+                rows = _rows_naming_trees(project, repository, new_trees)
+                if rows is None:
+                    # The store could not say which rows name these trees.
+                    # Leave them out of the inspected set and move the
+                    # generation on, so neither this read's index nor its
+                    # memoised answer records them: the next refresh asks
+                    # again instead of dropping the duty until an unrelated
+                    # aggregate rewrite.
+                    uninspected = new_trees
+                    index.generation += 1
+                else:
+                    for row in rows:
+                        run_id = str(row.get("run_id") or "")
+                        if not run_id or run_id in index.aggregate:
+                            continue
+                        index.extra.add(run_id)
+                        affected.update(
+                            index.replace((1, run_id), row, _retained_worktree(row))
+                        )
             if had_extra != bool(index.extra):
                 affected.update(inspected)
         index.records.order_key = ledger.promotion_order_key if index.extra else None
-        index.refresh_trees(inspected, affected)
+        index.refresh_trees(inspected - uninspected, affected)
         if reusable:
             _held_remember(
                 _HELD_RECORD_READS, cache_key, (aggregate_stamp, identities, index)
