@@ -26,6 +26,7 @@ dropped deliberately.
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable, Mapping
 from functools import partial
 from pathlib import Path
@@ -35,6 +36,13 @@ from typing import Any
 #: coordinator owns the plan. It names the service rather than a person, so a
 #: reader of the queue can tell work nobody asked for from work a session did.
 SERVICE_SESSION = "admission-service"
+
+#: How long one pass may spend filing before it launches what is queued. The
+#: fill runs before the launch stage, and a cold fill (a fresh service image
+#: remembers no plan) once took over half an hour, during which nothing
+#: launched. Past this bound the rest of the plans are deferred to later passes;
+#: at least one plan is always filed, so the fill still moves forward.
+FILL_BUDGET_SECONDS = 120.0
 
 
 def mounted_projects() -> dict[str, Path]:
@@ -92,6 +100,8 @@ class PlanQueue:
         config_for: Callable[[str], Mapping[str, Any]] | None = None,
         queue: Callable[..., Mapping[str, Any]] | None = None,
         projects: Mapping[str, Path] | None = None,
+        budget_seconds: float | None = None,
+        clock: Callable[[], float] = time.monotonic,
     ) -> dict[str, Any]:
         """File every request the mounted projects' plans may have.
 
@@ -111,10 +121,23 @@ class PlanQueue:
         store = queue if queue is not None else queue_plan
         catalogue = dict(projects) if projects is not None else mounted_projects()
         report: dict[str, Any] = {"projects": [], "queued": 0, "filed": []}
+        budget = FILL_BUDGET_SECONDS if budget_seconds is None else budget_seconds
+        started = clock()
+        stored_any = False
+
+        def spent() -> bool:
+            return stored_any and clock() - started >= budget
+
         for project, docs in sorted(catalogue.items()):
             root = Path(docs).parent
             entry: dict[str, Any] = {"project": project, "plans": []}
             report["projects"].append(entry)
+            if spent():
+                # Nothing about this project is remembered, so the next pass
+                # reads it as it would have been read here.
+                entry["reason"] = "deferred: the pass's fill budget is spent"
+                report["deferred"] = True
+                continue
             # The service's own pass names no callable, so its projects are
             # resolved per pass from each project's checkout.
             config_of = (
@@ -161,6 +184,15 @@ class PlanQueue:
                 ownership = {"plans": {}}
             plans = ownership.get("plans") or {}
             for slug in pending:
+                if spent():
+                    # Left out of the remembered set, so a later pass files it.
+                    failed.add(slug)
+                    entry["plans"].append(
+                        {"plan": slug, "reason": "deferred: fill budget spent"}
+                    )
+                    report["deferred"] = True
+                    continue
+                stored_any = True
                 row = plans.get(slug) or {}
                 session = (
                     str(row.get("coordinator") or "")
