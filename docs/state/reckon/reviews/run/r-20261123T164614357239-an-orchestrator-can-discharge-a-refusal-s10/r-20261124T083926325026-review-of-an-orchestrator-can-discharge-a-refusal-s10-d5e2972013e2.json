@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/evidence.py:1913 compose_landed_record",
+    "reckon/serve.py:2893",
+    "reckon/mcp.py:1353",
+    "reckon/doccheck.py:1993"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T08:39:59Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/an-orchestrator-can-discharge-a-refusal/preserve-ordinary-resume-after-a-lane-change.html",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The repair removes the duplicate fragment correctly, but the only check that the section carries one heading per verification is the uncommitted helper logs/repair-reuse-check.sh in the run's directory (git ls-files finds no copy in the repository), so nothing in the suite fails if a duplicate fragment is added back. A committed test asserting one heading per section would be outside this node's declared write paths, so the node could not add it; recorded here so a coordinator can fold it into a node that owns such a guard."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Reached through reckon/evidence.py:1913 compose_landed_record, called from reckon/serve.py:2893, reckon/mcp.py:1353 and reckon/doccheck.py:1993, each of which reads the fragment directory.",
+    "diff": "Read commit by commit over 46cf025346..d5e2972013: one commit, d5e2972013, deleting one file (docs/evidence/fragments/an-orchestrator-can-discharge-a-refusal/an-orchestrator-can-discharge-a-refusal-s10.html, 54 deletions, no additions), with no product source, no test and no plan edit.",
+    "done_when": "The done_when is that an ordinary crew resume --advice finds the session id after a lane-changing resume; the gate tests/test_lane_change_keeps_resume_identity.py asserts exactly that, recorded at logs/repair-after.log (2 passed, EXIT=0 at head d5e2972013) and logs/repair-base.log (2 passed, EXIT=0 at base 4fa07b80a8). The deletion does not touch the product code that case exercises.",
+    "goal": "The section-10 goal is that a lane change does not strand the ordinary resume; the gained commit d5e2972013 deletes docs/evidence/fragments/an-orchestrator-can-discharge-a-refusal/an-orchestrator-can-discharge-a-refusal-s10.html:1-54, a duplicate evidence record for that section, so the section publishes its verification once; the behaviour the record documents is unchanged.",
+    "manifest": "Read in full: status complete, commits [14f2f7faea, e8bb6b1adc, 46cf025346, d5e2972013], a landing line, the literal gate command, both suite arms, the reuse negative control at logs/repair-reuse-check.sh, all six rubric lines, and evidence_inputs naming compose_landed_record.",
+    "write_paths": "Declared paths are the s10 evidence fragment and its figure directory; the gained diff deletes only the fragment and leaves the figure directory untouched, so it is inside scope."
+  },
+  "justifications": {
+    "durability": "No committed test fails if the duplicate fragment at docs/evidence/fragments/an-orchestrator-can-discharge-a-refusal/ is re-added; the check that showed count=2 to count=1 lives in the run's logs/repair-reuse-check.sh and is not tracked by git.",
+    "evidence": "logs/repair-base.log and logs/repair-after.log each record 2 passed / EXIT=0 at their own revisions for tests/test_lane_change_keeps_resume_identity.py, and logs/repair-reuse-negative-control.log records count=2 EXIT=1 pre-repair and count=1 EXIT=0 at head.",
+    "fit": "The remaining record docs/evidence/fragments/an-orchestrator-can-discharge-a-refusal/preserve-ordinary-resume-after-a-lane-change.html:1 follows the evidence-fragment idiom and the commit uses a conventional docs(evidence) subject with a body, naming no forbidden label.",
+    "goal_fidelity": "The deletion at docs/evidence/fragments/an-orchestrator-can-discharge-a-refusal/an-orchestrator-can-discharge-a-refusal-s10.html removes a duplicate of the section's verification, repairing this node's own deliverable rather than adding the section-10 endpoint, which the branch already carries.",
+    "reuse": "The change removes the duplicate so the section reuses its owner fragment preserve-ordinary-resume-after-a-lane-change.html:1, which carries the same h2 and the same tests/test_lane_change_keeps_resume_identity.py verification; reckon/evidence.py:1913 composes by node id, so with the duplicate gone the verification publishes once.",
+    "scope_discipline": "The only path in the gained diff is docs/evidence/fragments/an-orchestrator-can-discharge-a-refusal/an-orchestrator-can-discharge-a-refusal-s10.html, deleted, which is exactly a declared write path."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261124T083926325026-review-of-an-orchestrator-can-discharge-a-refusal-s10-d5e2972013e2",
+  "reviewed_base_sha": "46cf025346371762b11c2454dccd51392cbc0d07",
+  "reviewed_head_sha": "d5e2972013e246cb039b3700242f5717a610522c",
+  "reviewed_revision_note": "Re-review of the commits gained since the review at head 46cf025346371762b11c2454dccd51392cbc0d07: the single gained commit is d5e2972013e246cb039b3700242f5717a610522c (46cf025346..d5e2972013: 1 file, 54 deletions, no additions). The run's net range 4fa07b80a8..d5e2972013 is empty because the run added the fragment and then deleted it, so the pair recorded here is the range actually read.",
+  "reviewed_run_id": "r-20261123T164614357239-an-orchestrator-can-discharge-a-refusal-s10",
+  "rubric": "VERDICT goal: the section-10 goal is that a lane change does not strand the ordinary resume; the gained commit d5e2972013 deletes the duplicate evidence fragment so the section publishes its verification once.\nVERDICT done_when: the done_when is that an ordinary crew resume --advice finds the session id after a lane-changing resume; logs/repair-after.log records 2 passed / EXIT=0 for tests/test_lane_change_keeps_resume_identity.py at head.\nVERDICT write_paths: the gained diff deletes only the declared fragment and leaves the figure directory empty, so it is inside scope.\nVERDICT manifest: read in full; it records status complete, the gate command, both suite arms and the reuse negative control, and all six rubric lines.\nVERDICT diff: read commit by commit over 46cf025346..d5e2972013; one commit deleting one file, 54 deletions and no additions.\nCALL_SITES: reckon/evidence.py:1913 compose_landed_record, reckon/serve.py:2893, reckon/mcp.py:1353, reckon/doccheck.py:1993\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the deletion at docs/evidence/fragments/an-orchestrator-can-discharge-a-refusal/an-orchestrator-can-discharge-a-refusal-s10.html removes a duplicate of the section's verification rather than adding the section-10 endpoint.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/repair-after.log records 2 passed / EXIT=0 for tests/test_lane_change_keeps_resume_identity.py at head, and logs/repair-base.log the same at base.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained diff deletes only docs/evidence/fragments/an-orchestrator-can-discharge-a-refusal/an-orchestrator-can-discharge-a-refusal-s10.html, a declared write path.\nSCORE durability: 11\nJUSTIFICATION durability: no committed test fails if the duplicate fragment is re-added; the check that showed count=2 to count=1 is logs/repair-reuse-check.sh, untracked.\nSCORE fit: 19\nJUSTIFICATION fit: the remaining record docs/evidence/fragments/an-orchestrator-can-discharge-a-refusal/preserve-ordinary-resume-after-a-lane-change.html:1 follows the evidence-fragment idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change removes the duplicate so the section reuses its owner fragment preserve-ordinary-resume-after-a-lane-change.html:1 under the compositor at reckon/evidence.py:1913.\nFINDING docs/evidence/fragments/an-orchestrator-can-discharge-a-refusal/preserve-ordinary-resume-after-a-lane-change.html:1 non-blocking: the only guard against a re-added duplicate fragment is the untracked logs/repair-reuse-check.sh, so no repository test protects the section's single-heading property.",
+  "scores": {
+    "durability": 11,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T08:55:00+00:00",
+  "total": 105
+}
