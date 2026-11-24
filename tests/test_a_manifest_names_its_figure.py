@@ -192,8 +192,12 @@ def test_a_manifest_naming_no_figure_passes(repo: Path) -> None:
 
 
 def test_the_composed_implementation_prompt_states_the_rule() -> None:
+    # A node whose done-when states a measure is the one the figure sentence
+    # is composed for, so this asserts what that node is actually told: name
+    # the figure on the manifest's `figures:` line, write it under its own
+    # directory, and never render a table as an image.
     prompt = compose_prompt(
-        node=_node(),
+        node=_node(done_when="the convergence figure shows the retained share"),
         project="proj",
         worktree="/repo/worktrees/" + NODE,
         working_directory="/repo/worktrees/" + NODE,
@@ -203,9 +207,6 @@ def test_the_composed_implementation_prompt_states_the_rule() -> None:
     )
 
     flat = " ".join(prompt.split())
-    assert "`figures:` line in your manifest" in flat
-    assert "docs/figures/<plan>/" in flat
-    assert (
-        "the manifest check holds a named figure to a file the run's commits "
-        "carry there" in flat
-    )
+    assert "name it on the manifest's `figures:` line" in flat
+    assert "docs/figures/<plan>/<node-id>/" in flat
+    assert "never an image of what is naturally a table" in flat
