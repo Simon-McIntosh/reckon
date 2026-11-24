@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T07:00:43Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-report-is-kept-only-when-persisted.html:127",
+      "id": "anchors_resolve-1",
+      "reason": "the plan's own condition for declaring \u00a74 done is unmet yet the section reads done, so any reader believes the 330 GB store has been measured when no record shows it; either the record must be produced at the named path or the done-when and declaration corrected.",
+      "text": "\u00a74 requires the coordinator's real-store dry-run record at docs/evidence/fragments/a-report-is-kept-only-when-persisted/an-unpersisted-report-expires.html and states the section is declared done only once that record shows the dry run finished, but that file does not exist: the folder holds a-persisted-item-has-a-record-and-a-home-outside.html, a-report-is-kept-only-when-persisted-s3.html, a-report-is-kept-only-when-persisted-s8.html, the-existing-backlog-leaves-home.html and wave3-clive-anchored-a-report-is-kept-only-when-p-s4.html, whose \"Outside this node's scope\" paragraph records the real-store dry run as the coordinator's step, while plan-section-declarations reads s4: done",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-report-is-kept-only-when-persisted.html:124",
+      "id": "reasoning-1",
+      "reason": "the step as written either violates that rule or is starved/refused by whoever runs it, so the record the section's gate depends on has no compliant route; the plan must name a partition (a bounded all_debug job or rigel) rather than the fleet node.",
+      "text": "\u00a74 tells the coordinator to run one dry run over the real reports store \"on the fleet node, under a 30-minute timeout\", but a walk of about 330 GB of report trees is a whole-store corpus scan, which the workstation's heavy-work rule keeps off the fleet node because it takes cores and GPFS bandwidth from every coordinator session",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-report-is-kept-only-when-persisted.html:88",
+      "id": "reasoning-2",
+      "reason": "a reader cannot tell whether the plan text or the shipped code is the contract, and each symbol the plan names that later moves costs another review round; stating the citation set the classifier must derive, and the records each surface must return, removes a list that is already stale.",
+      "text": "\u00a74 prescribes the implementation instead of the endpoint, and the prescription has already diverged: it requires the citation scan to reuse `_LINK_ATTR_RE` beside `iter_resources`, `audit_links` and `_link_record`, but `_LINK_ATTR_RE` lives in reckon/resources.py:88 and the landed module writes its own `_LINK_RE` at reckon/crew/report_retention.py:46, and the module's one function is `classify_item` where the plan says `classify`; the same pattern (named modules, functions and write paths rather than the records and figures a section delivers) runs through \u00a72, \u00a73, \u00a75 and \u00a77\u2013\u00a711",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f5e28760f6e29d1ee96b30aab5f886ba0b6d1f99",
+  "plan_fingerprint": "85d09248845ae99cd4df41689af6519069bee3dfbec8e318f14466a086c79f23",
+  "plan_slug": "a-report-is-kept-only-when-persisted",
+  "plan_version": 37,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261124T065958793160-plan-review-of-a-report-is-kept-only-when-persisted",
+  "reviewed_blob_sha": "ccc573cdbc95893a8aa3efc1d61420cb2bbba066",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a74 names a real-store dry-run record the section's own gate depends on, which does not exist, while the section is declared done (plan.html:127).",
+    "done_when": "pass \u2014 each deliverable section names a negative control that must fail at the base revision (s2 skipped hash check, s3 a second endpoint implementation, s4 three controls, s5 swapped listing classes, s6 a folder kept by the settle check, s7\u2013s11 a base-revision failing case).",
+    "evidence_paths": "pass \u2014 gate logs sit under each run's directory and landed records under docs/evidence/fragments/a-report-is-kept-only-when-persisted/; the one named record that is absent is reported under anchors_resolve, not duplicated here.",
+    "naming": "pass \u2014 proposed module, test and helper names are described by what they do; no plan labels, stage names, ticket numbers or version tags reach code.",
+    "reasoning": "two findings \u2014 \u00a74's measurement step runs a whole-store scan on the fleet node (plan.html:124), and \u00a74 prescribes the implementation with a symbol list already contradicted by the landed module (plan.html:88).",
+    "single_goal": "pass \u2014 each section states one endpoint; s3's three surfaces and s4's classifier-plus-sweep are one deliverable each, not two.",
+    "wiring": "pass \u2014 every declared depends-on resolves to a section that exists and carries the upstream the section consumes (s3\u2192s2,s4; s4\u2192s2; s5\u2192s3,s4; s9\u2192s8; s10\u2192s8; s11\u2192s7), and no node consumes an undeclared upstream."
+  },
+  "section_digests": {
+    "_document": "289d46e2864010afc24c44532320126f8e51d9bcec89b6c14556e3fa449da709",
+    "s1": "ee47fe5018715e3fb4b9e9312fa9f5edd9cb7704d33128b5fb7faff903354379",
+    "s10": "953d845dafa553e1f724807b4badf9e918feff8bd24b01f1be6fa99144f586e2",
+    "s11": "a48e55f0ae007044196b2f075f2c1ad39a41a9ad86520a90ab9b265cbf229bcf",
+    "s2": "9396d7300c138b3407fc2803876606122442333cef7e2724797bf8da6d1fe47c",
+    "s3": "c87823744a63909821eae7b0be527c1d07f3add90ec9aaaec1ed327978197387",
+    "s4": "0135c54654765e34c225b2005ed6c7260ffcd2724f3222ebf808142a3e452e49",
+    "s5": "ea0c5f9bc3e471e0925d285043420f83f16fd469b2f4c95e1f12610224366cef",
+    "s6": "6c471b14972a42e0101dac6f6557f756abdebee752fe914375756de57c03b742",
+    "s7": "038663d5d93759e7305e472f2bc3eba15c8afb4b27c9b27b5f1c48201758c8ff",
+    "s8": "2f83ef1d6d95623619a92a03b54e49558ccb9be404f7eefa8206c9180fdade49",
+    "s9": "f48cb23f1968981b30bcc5b2250e01a93b777cd3fdef279dd04dc3a8623710d4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T07:22:45.132633+00:00",
+  "total": null
+}
