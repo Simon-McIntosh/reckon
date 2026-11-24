@@ -66,6 +66,10 @@ TESTS = {
         "the manifest reader refuses a status word outside the vocabulary",
         "tests/test_manifest_parse_format.py::test_an_unknown_status_word_raises_naming_the_word_and_the_recognised",
     ),
+    "statusreconcile": (
+        "the run classifier checks a manifest's own terminal word against the run classification",
+        "tests/test_an_unnameable_wait_is_raised.py::test_an_ended_run_with_a_complete_status_keeps_its_word",
+    ),
 }
 
 
@@ -97,7 +101,9 @@ def match_enforcement(s: str):
         return TESTS["queuebound"]
     if any_of(s, "unacknowledged", "stop hook") and any_of(s, "refus", "obligation", "stop"):
         return TESTS["ack"]
-    if "status" in s and any_of(s, "vocabulary", "complete, blocked", "outside the", "never terminated normally"):
+    if "checked against the run classification" in s or "manifest_status" in s:
+        return TESTS["statusreconcile"]
+    if "status" in s and any_of(s, "vocabulary", "complete, blocked", "outside the vocabulary"):
         return TESTS["manifest"]
     return None
 

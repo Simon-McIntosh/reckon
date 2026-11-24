@@ -46,16 +46,29 @@ def check_citations(rows, logs_text: str) -> list[str]:
     return missing
 
 
-def log_statements(logs_dir: Path) -> list[tuple[str, str, str]]:
-    """Each log's name, revision and own result line, as the audit reads them."""
+def log_statements(logs_dir: Path) -> list[tuple[str, str, str, str]]:
+    """Each log's name, revision, result line and the command that ran it."""
     statements = []
     for path in sorted(logs_dir.glob("*.log")):
         text = path.read_text(encoding="utf-8", errors="replace")
         named = _GATE_LOG_REVISION.search(_first_recorded_line(text))
         summary = pytest_summary_line(text)
+        command = next(
+            (line[len("# command:") :].strip() for line in text.splitlines() if line.startswith("# command:")),
+            "",
+        )
         if named and summary:
-            statements.append((path.name, named.group(1), summary))
+            statements.append((path.name, named.group(1), summary, command))
     return statements
+
+
+def log_for_test(test: str, statements) -> str | None:
+    """The one log whose command ran this test node, if any ran it."""
+    node = test.split("::", 1)[-1]
+    for name, _revision, _summary, command in statements:
+        if node and node in command:
+            return name
+    return None
 
 
 def per_file_counts():
@@ -113,11 +126,14 @@ def render(rows, total: int, statements) -> str:
     out.append(
         "   <p><code>scan_head.py</code> splits <code>skills/reckon-build/SKILL.md</code> and every file under"
         " <code>skills/reckon-build/references/</code> — nine references plus the two harness files — into"
-        " prose sentences, dropping fenced code, headings, table rows and raw HTML. A sentence is"
-        " <em>binding</em> when it carries a strong modal (<em>must</em>, <em>never</em>, <em>always</em>,"
-        " <em>do not</em>, <em>refuse</em>, <em>shall</em>, <em>mandatory</em>, <em>no longer</em>,"
-        " <em>cannot</em>, <em>required</em>) or opens with an imperative verb. Every binding sentence has"
-        " one row in §2.</p>"
+        " prose sentences, dropping fenced code, headings, table rows and raw HTML. The keyword set,"
+        " imperative-verb table and abbreviation guard are imported from"
+        " <code>classify-rules-in-the-skill/scan_binding.py</code>, the module that already owns them, so"
+        " there is one definition of what reads as a rule. A sentence is <em>binding</em> when it carries"
+        " that keyword set (<em>must</em>, <em>never</em>, <em>always</em>, <em>do not</em>, <em>only</em>,"
+        " <em>refuse</em>, <em>shall</em>, <em>mandatory</em>, <em>no longer</em>, <em>cannot</em>,"
+        " <em>required</em>, and the rest) or opens with an imperative verb from that table. Every binding"
+        " sentence has one row in §2, located at the line its first character sits on.</p>"
     )
     out.append(
         f"   <p>The plan written on 2026-09-26 named eight reference files. The corpus is twelve files today:"
@@ -182,7 +198,7 @@ def render(rows, total: int, statements) -> str:
         " page and the audit spell each figure the same way:</p>"
     )
     out.append("   <ul>")
-    for name, revision, summary in statements:
+    for name, revision, summary, _command in statements:
         out.append(
             f"    <li><code>{esc(name)}</code> — revision <code>{esc(revision)}</code>,"
             f" {esc(summary)}</li>"
@@ -191,8 +207,7 @@ def render(rows, total: int, statements) -> str:
     out.append("   <table>")
     out.append("    <thead><tr><th>Refusal or check</th><th>Test id</th><th>Log</th></tr></thead><tbody>")
     for test, by in tests.items():
-        fname = test.split("::")[0]
-        log = f"logs/enforced/{Path(fname).name}.log"
+        log = "logs/enforced/" + log_for_test(test, statements)
         out.append(
             f"     <tr><td>{esc(by)}</td><td><code>{esc(test)}</code></td>"
             f"<td><code>{esc(log)}</code></td></tr>"
@@ -238,7 +253,20 @@ def main() -> int:
         for m in missing:
             print("  " + m, file=sys.stderr)
         return 2
-    out_path.write_text(render(rows, total, log_statements(logs_dir)), encoding="utf-8")
+    statements = log_statements(logs_dir)
+    if "--arm-logs" in args:
+        statements += log_statements(Path(args[args.index("--arm-logs") + 1]))
+    unlogged = [
+        f"{r['file']}:{r['line']} cites {r['test']}"
+        for r in rows
+        if r["disposition"] == "delete as enforced" and log_for_test(r["test"], statements) is None
+    ]
+    if unlogged:
+        print("REFUSED: enforced rows name no log whose command ran their test:", file=sys.stderr)
+        for m in unlogged:
+            print("  " + m, file=sys.stderr)
+        return 2
+    out_path.write_text(render(rows, total, statements), encoding="utf-8")
     print(f"# wrote {out_path} rows={len(rows)}", file=sys.stderr)
     return 0
 
