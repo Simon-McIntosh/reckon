@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/admission/selection.py:393 (fair_share_admission_order, the admit pass order)",
+    "reckon/crew/queue_order.py:646 (admission_order_details applies the move)",
+    "reckon/crew/queue_order.py:469 (fair_queue_order_details applies the move)",
+    "reckon/crew/promotion_requests.py:980 (fair_queue_order_details via _pending_requests, config_for=_request_config)",
+    "reckon/crew/queue_admission.py:155-157 (queued_placements re-export)",
+    "reckon/crew/queue_view.py:363 (queued_placements, published position)",
+    "reckon/crew/dispatching/requests.py:564 (admission_order, position preview)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-24T05:08:27Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_order.py",
+      "line": 383,
+      "severity": "non-blocking",
+      "summary": "No test pairs an override at the critical level with a request past STARVATION_AGE_SECONDS, so the loop at queue_order.py:383-386 that keeps criticals behind aged work could be removed and every named test would still pass, silently restoring the starvation regression this fix was written to repair.",
+      "text": "The helper's docstring states two boundaries: an aged request keeps its precedence, and a queue with no review is returned unchanged. Only the second is exercised (tests/test_a_critical_request_takes_a_slot_before_reviews.py covers override 100/99/none, project level 50, the fair-share pass, and the promotion path). Because _precedence puts aged non-review rows after the reviews, removing the `if now is not None:` insert-move would place a critical request at the first review's index, ahead of every aged row, with no red test. The five restored shared-order tests do not carry an override at the critical level, so they do not close the gap.",
+      "title": "the starvation boundary of the new move has no test"
+    },
+    {
+      "file": "reckon/crew/admission/ordering.py",
+      "line": 319,
+      "severity": "non-blocking",
+      "summary": "priorities_first's local _critical re-expresses the rule queue_order._critical_ahead_of_reviews._is_critical now owns, and the two differ (the local one has no starvation or review guard), so a later change to one leaves the hoist and the shared order disagreeing.",
+      "text": "queue_order.py:363-372 decides criticality with an is_review and a _starved guard; admission/ordering.py:319-323 decides it again as `_critical_level(pointer, config_for) <= points`. The comment at ordering.py:331 claims the move is 'applied again rather than reimplemented', which is true of the move but not of the predicate. Today the divergence is inert because `raised` already excludes aged pointers and reviews, but it is the same drift class the previous review recorded at this line.",
+      "title": "the criticality predicate is still written twice"
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261124T050347463580-review-of-arcaf-reviews-take-slots-first-719e2bf02eb7",
+  "reviewed_base_sha": "a5d4eb382b790b8ac5bc790a471bb19fedb8b54e",
+  "reviewed_head_sha": "719e2bf02eb71635b4773666382bbeac98b5a4b5",
+  "reviewed_run_id": "r-20261122T213519079815-arcaf-reviews-take-slots-first",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-24T05:23:25.834306+00:00",
+  "total": 102,
+  "verdicts": {
+    "diff": "Read the delta a5d4eb38..719e2bf02e commit by commit: e65d2506 reverts the critical urgency class from _precedence and adds _critical_ahead_of_reviews applied in both queue_detail functions and re-applied in priorities_first; 1208107a and 719e2bf02e update the evidence fragment only, and I confirmed their quoted numbers against each log's summary line.",
+    "done_when": "done_when names tests/test_a_critical_request_takes_a_slot_before_reviews.py and the shipped-defaults test; template-head-1208107a.log records 66 passed in 43.07s with EXIT=0 over exactly that file and the shipped-defaults, staged, and lock tests, against 59 passed at base 4fa07b80.",
+    "goal": "The node goal is that a delivered run's review takes a freed slot ahead of implement work while a critical override may go ahead of it; the delta read at queue_order.py:339-387 (the shared move) and ordering.py:353 (its re-application in the pass) preserves the review's lead and lets a critical request overtake it, so the landed delta still meets the goal.",
+    "manifest": "Read the reviewed manifest; it records the template and importing arms at their revisions and quotes 59/66 and the two 12-failure importing arms, with the scoped gate, imported-test, and negative-control logs named on disk.",
+    "write_paths": "The declared set covers reckon/crew/admission, reckon/crew/queue_order.py and the evidence fragment; the delta a5d4eb38..719e2bf02e touches only ordering.py, queue_order.py and the fragment, all inside it."
+  }
+}
